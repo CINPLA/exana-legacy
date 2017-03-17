@@ -1,5 +1,5 @@
 package:
-  name: expipe-io-neuroscience
+  name: exana
   version: {{ environ.get("GIT_DESCRIBE", "unknown_version")|replace("v", "")|replace("-", "_") }}
 
 source:
@@ -31,5 +31,5 @@ test:
 
 about:
   home: https://github.com/CINPLA/exana/
-  license: GPL
+  license: GPLv3
   license_file: LICENSE
