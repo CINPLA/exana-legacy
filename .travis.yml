@@ -20,4 +20,4 @@ deploy:
     skip_cleanup: true
     script: bash -ex libs/travis-conda-scripts/scripts/upload.sh cinpla #-unstable
     on:
-branch: dev
+      branch: dev
