@@ -1,0 +1,35 @@
+package:
+  name: expipe-io-neuroscience
+  version: {{ environ.get("GIT_DESCRIBE", "unknown_version")|replace("v", "")|replace("-", "_") }}
+
+source:
+  path: .
+ 
+build:
+  noarch: python
+  script: python setup.py install
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - pip
+    - numpy
+    - quantities
+
+  run:
+    - python
+    - setuptools
+    - pip
+    - numpy
+    - scipy
+    - quantities
+
+test:
+  imports:
+    - exana
+
+about:
+  home: https://github.com/CINPLA/expipe-io-neuroscience/
+  license: GPL
+license_file: LICENSE
