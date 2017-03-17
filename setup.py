@@ -3,7 +3,6 @@ from setuptools import setup
 import os
 
 from setuptools import setup, find_packages
-import versioneer
 
 
 long_description = open("README.md").read()
