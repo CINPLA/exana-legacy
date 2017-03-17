@@ -14,6 +14,5 @@ setup(
     name="exana",
     packages=find_packages(),
     include_package_data=True,
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass()
+    version=0.1,
 )
