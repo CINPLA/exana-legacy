@@ -6,7 +6,7 @@ def test_rm_nans():
     Test of rm_nans(x,y,t)
     """
     import quantities as pq
-    from expipe.analysis.tracking.tools import rm_nans
+    from exana.tracking.tools import rm_nans
 
     x = np.arange(0., 10.) * 0.1 * pq.m
     y = np.arange(0., 10.) * 1.0 * pq.m
@@ -25,7 +25,7 @@ def test_rm_nans():
 
 def test_spatial_rate_map_rate_shape():
     import quantities as pq
-    from expipe.analysis.tracking.fields import spatial_rate_map
+    from exana.tracking.fields import spatial_rate_map
     import neo
     N = 20
     binsize = 0.2 * pq.m
@@ -53,7 +53,7 @@ def test_spatial_rate_map_rate_shape():
 
 def test_spatial_rate_map_rate_convolve():
     import quantities as pq
-    from expipe.analysis.tracking.fields import spatial_rate_map
+    from exana.tracking.fields import spatial_rate_map
     import neo
     N = 20
     binsize = 0.2 * pq.m
@@ -73,7 +73,7 @@ def test_spatial_rate_map_rate_convolve():
 
 def test_spatial_rate_map_binsize_error():
     import quantities as pq
-    from expipe.analysis.tracking.fields import spatial_rate_map
+    from exana.tracking.fields import spatial_rate_map
     import neo
     # raise error if box length not multiple of binsize
     with pytest.raises(ValueError):
@@ -96,7 +96,7 @@ def test_spatial_rate_map_binsize_error():
 
 def test_spatial_rate_map_len_error():
     import quantities as pq
-    from expipe.analysis.tracking.fields import spatial_rate_map
+    from exana.tracking.fields import spatial_rate_map
     import neo
     # raise error if len(t) != len(x)
     with pytest.raises(ValueError):
@@ -119,7 +119,7 @@ def test_spatial_rate_map_len_error():
 
 def test_spatial_rate_map_size_error():
     import quantities as pq
-    from expipe.analysis.tracking.fields import spatial_rate_map
+    from exana.tracking.fields import spatial_rate_map
     import neo
     # raise error if box length smaller than path
     with pytest.raises(ValueError):
