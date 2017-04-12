@@ -18,7 +18,6 @@ import quantities as pq
 from scipy.signal import resample
 import numpy.fft as fftpack
 
-import joblib
 from tempfile import mkdtemp
 global memory
 memory = None
@@ -29,7 +28,6 @@ def assume_quantity(v, units = ''):
         return pq.Quantity(v, units)
     else:
         return v
-
 
 
 def generate_wavelet_fourier(len_wavelet,
@@ -197,6 +195,7 @@ class TimeFreq():
                 n = int(ana.size*sr/ana.sampling_rate)
             if wf is None:
                 if use_joblib:
+                    import joblib
                     global memory
                     if memory is None:
                         cachedir = mkdtemp()
