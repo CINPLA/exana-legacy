@@ -16,6 +16,7 @@ requirements:
     - pip
     - numpy
     - quantities
+    - gitpython
 
   run:
     - python
@@ -24,6 +25,7 @@ requirements:
     - numpy
     - scipy
     - quantities
+    - gitpython
 
 test:
   imports:
