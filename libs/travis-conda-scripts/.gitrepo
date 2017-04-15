@@ -7,5 +7,5 @@
 	remote = git@github.com:CINPLA/travis-conda-scripts.git
 	branch = master
 	commit = dce9f96363d2d8f91fa7a01fafc124e71e2abd0d
-	parent = 61339af08597c5ae88d4d4ec6f6af1ed31196f8d
+	parent = 6176ca3bea5431af4495725da32c29c911ef1e79
 	cmdver = 0.3.1
