@@ -25,7 +25,9 @@ def plot_path(x, y, t, box_xlen, box_ylen, sptr=None,
     t : quantities.Quantity array in s
         1d vector of time at x, y positions
     sptr : neo.SpikeTrain
-    box_size : quantities scalar
+    box_xlen : quantities scalar
+        size of spatial 2d square
+    box_ylen : quantities scalar
         size of spatial 2d square
     color : path color
     alpha : opacity of path
@@ -41,7 +43,8 @@ def plot_path(x, y, t, box_xlen, box_ylen, sptr=None,
     -------
     out : ax
     """
-    box_size = float(box_size.rescale('m').magnitude)
+    box_xlen = float(box_xlen.rescale('m').magnitude)
+    box_ylen = float(box_ylen.rescale('m').magnitude)
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111, xlim=[0, box_xlen], ylim=[0, box_ylen],
