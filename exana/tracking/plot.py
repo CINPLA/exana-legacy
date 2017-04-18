@@ -9,7 +9,8 @@ from ..misc.plot import simpleaxis
 import math
 
 
-def plot_path(x, y, t, sptr=None, box_size=1*pq.m, color='grey', alpha=0.5,
+def plot_path(x, y, t, box_xlen, box_ylen, sptr=None,
+              color='grey', alpha=0.5, origin='upper',
               spike_color='r', rate_markersize=False, markersize=1.,
               animate=False, ax=None, title=''):
     """
@@ -43,7 +44,7 @@ def plot_path(x, y, t, sptr=None, box_size=1*pq.m, color='grey', alpha=0.5,
     box_size = float(box_size.rescale('m').magnitude)
     if ax is None:
         fig = plt.figure()
-        ax = fig.add_subplot(111, xlim=[0, box_size], ylim=[0, box_size],
+        ax = fig.add_subplot(111, xlim=[0, box_xlen], ylim=[0, box_ylen],
                              aspect=1)
     if sptr is not None:
         spikes_in_bin, _ = np.histogram(sptr, t)
