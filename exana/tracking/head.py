@@ -105,6 +105,8 @@ def head_direction(x1, y1, x2, y2, t, return_rad=True, filt=2.):
     -------
     out : angles, resized t
     """
+    from .tools import _cut_to_same_len
+    x1, y1, x2, y2, t = _cut_to_same_len(x1, y1, x2, y2, t)
     import math
     measurements = len(x2)
     indeces = np.arange(measurements)

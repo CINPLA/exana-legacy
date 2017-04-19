@@ -3,6 +3,17 @@ import quantities as pq
 from ..misc.tools import is_quantities, normalize
 
 
+def _cut_to_same_len(*args):
+    out = []
+    lens = []
+    for arg in args:
+        lens.append(len(arg))
+    minlen = min(lens)
+    for arg in args:
+        out.append(arg[:minlen])
+    return out
+
+
 def get_raw_position(spot_group):
         """
         Get postion data from exdir led group
@@ -48,7 +59,7 @@ def get_tracking(postion_group):
         return tracking
 
 
-def select_best_position(x1, y1, t1, x2, y2, t2, speed_filter=5*pq.m/pq.s):
+def select_best_position(x1, y1, t1, x2, y2, t2, speed_filter=5 * pq.m / pq.s):
     """
     selects position data with least nan after speed filtering
 
@@ -70,6 +81,7 @@ def select_best_position(x1, y1, t1, x2, y2, t2, speed_filter=5*pq.m/pq.s):
         threshold filter for translational speed
     """
     is_quantities([x1, y1, t1, x2, y2, t2], 'vector')
+    x1, y1, t1, x2, y2, t2 = _cut_to_same_len(x1, y1, t1, x2, y2, t2)
     is_quantities(speed_filter, 'scalar')
     measurements1 = len(x1)
     measurements2 = len(x2)
@@ -94,8 +106,8 @@ def select_best_position(x1, y1, t1, x2, y2, t2, speed_filter=5*pq.m/pq.s):
     return x, y, t
 
 
-def interp_filt_position(x, y, tm, box_xlen=1*pq.m, box_ylen=1*pq.m,
-                         pos_fs=100*pq.Hz, f_cut=10*pq.Hz):
+def interp_filt_position(x, y, tm, box_xlen=1 * pq.m, box_ylen=1 * pq.m,
+                         pos_fs=100 * pq.Hz, f_cut=10 * pq.Hz):
     """
     Calculeate head direction in angles or radians for time t
 
@@ -137,12 +149,13 @@ def interp_filt_position(x, y, tm, box_xlen=1*pq.m, box_ylen=1*pq.m,
         raise ValueError('nans found in  position, ' +
             'x nans = %i, y nans = %i' % (sum(np.isnan(x)), sum(np.isnan(y))))
     if (x.min() < 0 or x.max() > box_xlen or y.min() < 0 or y.max() > box_ylen):
-        raise ValueError("Interpolation produces path values " +
+        raise ValueError(
+            "Interpolation produces path values " +
             "outside box: min [x, y] = [{}, {}], ".format(x.min(), y.min()) +
             "max [x, y] = [{}, {}]".format(x.max(), y.max()))
 
     R = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
-    V = R/np.diff(t)
+    V = R / np.diff(t)
     print('Maximum speed {} {}'.format(V.max(), V.dimensionality))
     return x, y, t
 
@@ -194,7 +207,7 @@ def velocity_threshold(x, y, t, threshold):
     r = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
     v = np.divide(r, np.diff(t))
     speed_lim = np.concatenate(([False], v > threshold), axis=0)
-    x[speed_lim] = np.nan*x.units
-    y[speed_lim] = np.nan*y.units
+    x[speed_lim] = np.nan * x.units
+    y[speed_lim] = np.nan * y.units
     x, y, t = rm_nans(x, y, t)
     return x, y, t
