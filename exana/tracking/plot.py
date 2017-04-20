@@ -11,7 +11,7 @@ import math
 
 def plot_path(x, y, t, box_xlen, box_ylen, sptr=None,
               color='grey', alpha=0.5, origin='upper',
-              spike_color='r', rate_markersize=False, markersize=1.,
+              spike_color='r', rate_markersize=False, markersize=10.,
               animate=False, ax=None, title=''):
     """
     Plot path visited
