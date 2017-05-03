@@ -20,14 +20,6 @@ exana.misc.pretty_plotting module
     :undoc-members:
     :show-inheritance:
 
-exana.misc.spikesort_sweep module
----------------------------------
-
-.. automodule:: exana.misc.spikesort_sweep
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 exana.misc.tools module
 -----------------------
 
