@@ -7,10 +7,11 @@ import versioneer
 
 long_description = open("README.md").read()
 
-install_requires = []
+install_requires = ['numpy', 'matplotlib']
 
 setup(
     name="exana",
+    install_requires=install_requires,
     packages=find_packages(),
     include_package_data=True,
     version=versioneer.get_version(),

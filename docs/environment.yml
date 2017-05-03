@@ -1,9 +1,0 @@
-channels:
-- conda-forge
-- defaults
-- cinpla
-dependencies:
-- numpy
-- matplotlib
-- exana
-- python=3.5
