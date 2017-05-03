@@ -1,5 +1,6 @@
 channels:
 - conda-forge
+- defaults
 - cinpla
 dependencies:
 - exana
