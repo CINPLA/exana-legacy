@@ -17,7 +17,7 @@ The documentation is written in reStructuredText, using the Sphinx
 documentation system. To build the documentation::
 
     $ cd exana/doc
-    $ sphinx-apidoc -o source/ ../exana/
+    $ sphinx-apidoc -o . ../exana/
     $ make html
     
 Then open `doc/build/html/index.html` in your browser.
