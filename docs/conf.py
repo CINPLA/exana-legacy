@@ -21,6 +21,7 @@ import os
 import re
 import exana
 import sys
+import numpy
 sys.path.insert(0, os.path.abspath('../exana'))
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
