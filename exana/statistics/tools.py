@@ -1,6 +1,6 @@
 import numpy as np
 import quantities as pq
-import pandas as pd
+
 
 def theta_mod_idx(sptr, **kwargs):
     '''Theta modulation index as defined in [1]_
@@ -123,9 +123,11 @@ def bootstrap(data, num_samples=10000, statistic=np.mean, alpha=0.05):
     return (stat[int((alpha/2.0)*num_samples)],
             stat[int((1-alpha/2.0)*num_samples)])
 
+
 def stat_test(tdict, test_func=None, nan_rule='remove'):
     '''performes statistic test between groups in tdict by given test function
     (test_func)'''
+    import pandas as pd
     if test_func is None:
         from scipy import stats
         test_func = lambda g1, g2: stats.ttest_ind(g1, g2, equal_var=False)
@@ -149,6 +151,7 @@ def stat_test(tdict, test_func=None, nan_rule='remove'):
                 ps[key1+'--'+key2] = p
                 sts[key1+'--'+key2] = stat
     return pd.DataFrame([ps, sts], index=['p-value','statistic'])
+
 
 def pairwise_corrcoef(nrns, binsize=5*pq.ms):
     from elephant.conversion import BinnedSpikeTrain

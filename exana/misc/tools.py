@@ -2,7 +2,6 @@ import neo
 import numpy as np
 import matplotlib.pyplot as plt
 import quantities as pq
-import pandas as pd
 import os
 
 
@@ -36,7 +35,9 @@ def moving_average(vec, N):
     return np.convolve(vec, np.ones((N,)) / N, mode='full')[(N-1):]
 
 
-def nested_dict2pandas_df(dictionary, depth=3, fcn=lambda inp: pd.Series(inp)):
+def nested_dict2pandas_df(dictionary, depth=3, fcn=None):
+    import pandas as pd
+    fcn = fcn or lambda inp: pd.Series(inp)
     if depth == 3:
         reform = {(outerKey, midKey, innerKey): fcn(values)
                   for outerKey, midDict in dictionary.iteritems()

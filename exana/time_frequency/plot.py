@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import quantities as pq
 from ..misc.tools import is_quantities
-from scipy import signal
 from .timefreq import TimeFreq
 
 
@@ -12,6 +11,7 @@ def plot_psd(trials, color='b', ax=None, nperseg=1024, lw=2, label='LFP',
              title=None, xlabel='Frequency [Hz]', ylabel='PSD', ylim=None,
              mean_power=False, max_power=False, srch=None):
     '''assumes all trials to be of same length'''
+    from scipy import signal
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -131,6 +131,7 @@ def plot_tfr(ana, tlim=None, f0=5, flim=None, nperseg=1024,
     tlim : list or tuple of size 2
         e.g. [start time, stop time]
     '''
+    from scipy import signal
     assert epo_style in ['vlines', 'hlines'], 'epo_style not implemented'
     if tlim is not None:
         import neo

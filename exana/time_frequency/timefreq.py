@@ -15,7 +15,6 @@ import numpy as np
 import quantities as pq
 
 # from scipy import fftpack
-from scipy.signal import resample
 import numpy.fft as fftpack
 
 from tempfile import mkdtemp
@@ -23,7 +22,7 @@ global memory
 memory = None
 
 
-def assume_quantity(v, units = ''):
+def assume_quantity(v, units=''):
     if not isinstance(v, pq.Quantity):
         return pq.Quantity(v, units)
     else:
@@ -47,79 +46,78 @@ def generate_wavelet_fourier(len_wavelet,
         wf : Fourier transform of the wavelet coefficients (after weighting), Fourier frequencies are the first
     """
     # compute final map scales
-    scales = f0/np.arange(f_start,f_stop,deltafreq)*sampling_rate
+    scales = f0 / np.arange(f_start, f_stop, deltafreq) * sampling_rate
     # compute wavelet coeffs at all scales
-    xi=np.arange(-len_wavelet/2.,len_wavelet/2.)
-    xsd = xi[:,np.newaxis] / scales
-    wavelet_coefs=np.exp(complex(1j)*2.*np.pi*f0*xsd)*np.exp(-np.power(xsd,2)/2.)
+    xi = np.arange(-len_wavelet / 2., len_wavelet / 2.)
+    xsd = xi[:, np.newaxis] / scales
+    wavelet_coefs = (np.exp(complex(1j) * 2. * np.pi * f0 * xsd) *
+                     np.exp(-np.power(xsd, 2) / 2.))
 
-    weighting_function = lambda x: x**(-(1.0+normalisation))
-    wavelet_coefs = wavelet_coefs*weighting_function(scales[np.newaxis,:])
+    weighting_function = lambda x: x**(-(1.0 + normalisation))
+    wavelet_coefs = wavelet_coefs * weighting_function(scales[np.newaxis, :])
 
     # Transform the wavelet into the Fourier domain
     #~ wf=fft(wavelet_coefs.conj(),axis=0) <- FALSE
-    wf=fftpack.fft(wavelet_coefs,axis=0)
-    wf=wf.conj() # at this point there was a mistake in the original script
+    wf = fftpack.fft(wavelet_coefs, axis=0)
+    wf = wf.conj()  # at this point there was a mistake in the original script
 
     return wf
 
-def reduce_signal(ana, t_start = None, t_stop = None):
+
+def reduce_signal(ana, t_start=None, t_stop=None):
     """
     reduce signal to time limits
     """
     # Reduce signal to time limits
     if t_start is not None:
-        ana = ana[ana.times>=t_start]
+        ana = ana[ana.times >= t_start]
         ana.t_start = max(t_start, ana.t_start)
     if t_stop is not None:
-        ana = ana[ana.times<=t_stop]
+        ana = ana[ana.times <= t_stop]
     return ana
 
-def check_or_get_sampling_rate(ana, f_stop, sampling_rate = None):
+
+def check_or_get_sampling_rate(ana, f_stop, sampling_rate=None):
     if sampling_rate is None:
-        if f_stop*4 < ana.sampling_rate:
-            sampling_rate = f_stop*4
+        if f_stop * 4 < ana.sampling_rate:
+            sampling_rate = f_stop * 4
         else:
             sampling_rate = ana.sampling_rate
-    assert sampling_rate>=2*f_stop
+    assert sampling_rate >= 2 * f_stop
     return sampling_rate
 
-def convolve_scalogram(ana, wf, sampling_rate,optimize_fft):
+
+def convolve_scalogram(ana, wf, sampling_rate, optimize_fft):
+    from scipy.signal import resample
     n = wf.shape[0]
     # HACK shape of ana in neo 0.5 is two dimensional
-    sig  = np.reshape(ana.magnitude, len(ana))
-    ana_sr=ana.sampling_rate.rescale('Hz').magnitude
+    sig = np.reshape(ana.magnitude, len(ana))
+    ana_sr = ana.sampling_rate.rescale('Hz').magnitude
     if optimize_fft:
-        sig=sig-sig.mean() # Remove mean before padding
-        nfft=int(2**np.ceil(np.log(sig.size)/np.log(2)))
-        sig=np.r_[sig,np.zeros(nfft-sig.size)] # pad signal with 0 to a power of 2 length
-        sig=resample(sig,int(sig.size*sampling_rate/ana_sr)) # resample in time domain
-        sigf=fftpack.fft(sig,n) # Compute fft with a power of 2 length
+        sig = sig - sig.mean()  # Remove mean before padding
+        nfft = int(2**np.ceil(np.log(sig.size) / np.log(2)))
+        sig = np.r_[sig, np.zeros(nfft - sig.size)] # pad signal with 0 to a power of 2 length
+        sig = resample(sig, int(sig.size * sampling_rate / ana_sr)) # resample in time domain
+        sigf = fftpack.fft(sig, n) # Compute fft with a power of 2 length
     else:
-        sigf=fftpack.fft(sig)
+        sigf = fftpack.fft(sig)
         # subsampling in fft domain (attention factor)
-        factor = (sampling_rate/ana.sampling_rate).simplified.magnitude
-        x=(n-1)//2
-        if np.mod(n,2)==0:
-            sigf = np.concatenate([sigf[0:x+2],  sigf[-x:]])*factor
+        factor = (sampling_rate / ana.sampling_rate).simplified.magnitude
+        x = (n - 1) // 2
+        if np.mod(n, 2) == 0:
+            sigf = np.concatenate([sigf[0: x + 2], sigf[-x:]]) * factor
         else:
-            sigf = np.concatenate([sigf[0:x+1],  sigf[-x:]])*factor
+            sigf = np.concatenate([sigf[0: x + 1], sigf[-x:]]) * factor
 
     # windowing ???
     #win = fftpack.ifftshift(np.hamming(n))
     #sigf *= win
 
     # Convolve (mult. in Fourier space)
-    wt_tmp=fftpack.ifft(sigf[:,np.newaxis]*wf,axis=0)
+    wt_tmp = fftpack.ifft(sigf[:, np.newaxis] * wf, axis=0)
     # and shift
-    wt = fftpack.fftshift(wt_tmp,axes=[0])
+    wt = fftpack.fftshift(wt_tmp, axes=[0])
     return wt
-
-
-
-
-
-
 
 
 class TimeFreq():
