@@ -70,7 +70,7 @@ def epoch_overview(epo, period, expected_num_epochs=None):
         return epo
     from neo import Epoch
     pause = np.diff(epo.times)
-    pause = pause > period + np.median(epo.durations)*2
+    pause = pause > period + np.median(epo.durations) * 2
     start_ind = np.concatenate((np.array([1]), pause))
     stop_ind = np.concatenate((pause, np.array([1])))
     stop_times = epo.times[stop_ind == 1]
@@ -78,8 +78,8 @@ def epoch_overview(epo, period, expected_num_epochs=None):
     if expected_num_epochs is not None:
         assert len(start_times) == expected_num_epochs
     return Epoch(times=start_times,
-                      durations=stop_times-start_times,
-                      description=epo.description)
+                 durations=stop_times-start_times,
+                 description=epo.description)
 
 
 def print_epo(epo, N=20):

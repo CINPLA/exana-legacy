@@ -155,7 +155,7 @@ def plot_tfr(ana, tlim=None, f0=5, flim=None, nperseg=1024,
                    deltafreq=freqs[1]-freqs[0],
                    f0=f0,
                    sampling_rate=ana.sampling_rate,
-                   use_joblib=True,
+                   use_joblib=False,
                    optimize_fft=True
                    )
     # compute the map
