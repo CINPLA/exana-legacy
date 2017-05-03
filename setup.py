@@ -11,9 +11,10 @@ install_requires = [
     'neo>=0.5',
     'numpy>=1.9',
     'quantities>=0.10.1',
-    'scipy>=0.14.0']
+    'matplotlib']
 extras_require = {
-    'pandas': ['pandas>=0.14.1'],
+    'stuff': ['pandas>=0.14.1',
+               'scipy>=0.14.0'],
     'docs': ['numpydoc>=0.5',
              'sphinx>=1.2.2']
 }
