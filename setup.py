@@ -14,7 +14,7 @@ install_requires = [
     'matplotlib']
 extras_require = {
     'stuff': ['pandas>=0.14.1',
-               'scipy>=0.14.0'],
+              'scipy>=0.14.0'],
     'docs': ['numpydoc>=0.5',
              'sphinx>=1.2.2']
 }

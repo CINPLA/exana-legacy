@@ -37,7 +37,9 @@ def moving_average(vec, N):
 
 def nested_dict2pandas_df(dictionary, depth=3, fcn=None):
     import pandas as pd
-    fcn = fcn or lambda inp: pd.Series(inp)
+    if fcn is None:
+        def fcn(inp):
+            return pd.Series(inp)
     if depth == 3:
         reform = {(outerKey, midKey, innerKey): fcn(values)
                   for outerKey, midDict in dictionary.iteritems()
