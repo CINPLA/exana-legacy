@@ -121,7 +121,7 @@ def plot_head_direction_rate(sptr, ang_bins, rate_in_ang, projection='polar',
 
 
 def plot_ratemap(x, y, t, sptr, binsize=0.05*pq.m, box_size=1*pq.m,
-                 vmin=0, ax=None, mask_unvisited=True, convolve=True
+                 vmin=0, ax=None, mask_unvisited=True, convolve=True,
                  origin='upper'):
     """
 
