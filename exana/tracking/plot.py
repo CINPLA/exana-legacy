@@ -76,6 +76,8 @@ def plot_path(x, y, t, box_xlen, box_ylen, sptr=None,
                        s=markersizes)
     ax.set_title(title)
     ax.grid(False)
+    if origin == 'upper':
+        ax.invert_yaxis()
     return ax
 
 
@@ -119,7 +121,8 @@ def plot_head_direction_rate(sptr, ang_bins, rate_in_ang, projection='polar',
 
 
 def plot_ratemap(x, y, t, sptr, binsize=0.05*pq.m, box_size=1*pq.m,
-                 vmin=0, ax=None, mask_unvisited=True, convolve=True):
+                 vmin=0, ax=None, mask_unvisited=True, convolve=True
+                 origin='upper'):
     """
 
 
@@ -145,7 +148,7 @@ def plot_ratemap(x, y, t, sptr, binsize=0.05*pq.m, box_size=1*pq.m,
     rate_map = spatial_rate_map(x, y, t, sptr, binsize=binsize,
                                  mask_unvisited=mask_unvisited, box_size=box_size,
                                  convolve=convolve)
-    ax.imshow(rate_map, interpolation='none', origin='lower',
+    ax.imshow(rate_map, interpolation='none', origin=origin,
               extent=(0, 1, 0, 1), vmin=vmin)
     ax.set_title('%.2f Hz' % np.nanmax(rate_map))
     ax.grid(False)
