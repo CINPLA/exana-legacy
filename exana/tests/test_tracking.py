@@ -1,6 +1,18 @@
 import numpy as np
 import pytest
 
+
+def test_cut_to_same_len():
+    from exana.tracking.tools import _cut_to_same_len
+    t = np.arange(12)
+    x = np.arange(11)
+    y = np.arange(11, 24)
+    t_, x_, y_ = _cut_to_same_len(t, x, y)
+    assert np.array_equal(t_, t[:-1])
+    assert np.array_equal(x_, x)
+    assert np.array_equal(y_, y[:-2])
+
+
 def test_rm_nans():
     """
     Test of rm_nans(x,y,t)

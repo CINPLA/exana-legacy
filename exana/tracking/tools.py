@@ -14,6 +14,18 @@ def _cut_to_same_len(*args):
     return out
 
 
+def monotonously_increasing(var):
+    return all(x > y for x, y in zip(var , var[1:]))
+
+
+def remove_eqal_times(time, *args):
+    idxs = np.where((x > y for x, y in zip(time , time[1:])))
+    out = []
+    for arg in args:
+        out.append(arg[idxs])
+    return time[idxs], out
+
+
 def get_raw_position(spot_group):
         """
         Get postion data from exdir led group
@@ -33,6 +45,9 @@ def get_raw_position(spot_group):
         # TODO: is this correct mapping?
         x = pq.Quantity(coords[:, 0], coords.attrs['unit'])
         y = pq.Quantity(coords[:, 1], coords.attrs['unit'])
+        if not monotonously_increasing(t):
+            import warnings
+            warnings.warn('Time is not monotonously increasing')
 
         return x, y, t
 
