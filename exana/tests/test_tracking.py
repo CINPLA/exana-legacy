@@ -13,6 +13,32 @@ def test_cut_to_same_len():
     assert np.array_equal(y_, y[:-2])
 
 
+def test_remove_eqal_times():
+    from exana.tracking.tools import remove_eqal_times
+    t = np.arange(20)
+    t[4] = t[5]
+    t[6] = t[5]
+    t[8] = t[9]
+    t[10] = t[9]
+    x = np.arange(11)
+    y = np.arange(11, 24)
+    t_, (x_, y_) = remove_eqal_times(t, x, y)
+    t = np.delete(t, [5, 6, 9, 10])
+    x = np.delete(x, [5, 6, 9, 10])
+    y = np.delete(y, [5, 6, 9, 10])
+    assert np.array_equal(t_, t)
+    assert np.array_equal(x_, x)
+    assert np.array_equal(y_, y)
+
+
+def test_monotonously_increasing():
+    from exana.tracking.tools import monotonously_increasing
+    t = np.arange(12)
+    assert monotonously_increasing(t)
+    t[4] = t[5]
+    assert not monotonously_increasing(t)
+
+
 def test_rm_nans():
     """
     Test of rm_nans(x,y,t)

@@ -15,15 +15,15 @@ def _cut_to_same_len(*args):
 
 
 def monotonously_increasing(var):
-    return all(x > y for x, y in zip(var , var[1:]))
+    return all(x < y for x, y in zip(var , var[1:]))
 
 
 def remove_eqal_times(time, *args):
-    idxs = np.where((x > y for x, y in zip(time , time[1:])))
+    idxs, = np.where([x == y for x, y in zip(time , time[1:])])
     out = []
     for arg in args:
-        out.append(arg[idxs])
-    return time[idxs], out
+        out.append(np.delete(arg, idxs+1))
+    return np.delete(time, idxs+1), out
 
 
 def get_raw_position(spot_group):
@@ -47,7 +47,9 @@ def get_raw_position(spot_group):
         y = pq.Quantity(coords[:, 1], coords.attrs['unit'])
         if not monotonously_increasing(t):
             import warnings
-            warnings.warn('Time is not monotonously increasing')
+            warnings.warn('Time is not monotonously increasing, ' +
+                          'removing equal timestamps.')
+            t, (x, y) = remove_eqal_times(t, x, y)
 
         return x, y, t
 
