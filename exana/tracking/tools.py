@@ -14,6 +14,18 @@ def _cut_to_same_len(*args):
     return out
 
 
+def monotonously_increasing(var):
+    return all(x < y for x, y in zip(var , var[1:]))
+
+
+def remove_eqal_times(time, *args):
+    idxs, = np.where([x == y for x, y in zip(time , time[1:])])
+    out = []
+    for arg in args:
+        out.append(np.delete(arg, idxs+1))
+    return np.delete(time, idxs+1), out
+
+
 def get_raw_position(spot_group):
         """
         Get postion data from exdir led group
@@ -28,11 +40,17 @@ def get_raw_position(spot_group):
             1d vectors with position and time from LED
         """
         coords = spot_group["data"]
-        t = pq.Quantity(spot_group["timestamps"].data,
-                        spot_group["timestamps"].attrs['unit'])
-        # TODO: is this correct mapping?
-        x = pq.Quantity(coords[:, 0], coords.attrs['unit'])
-        y = pq.Quantity(coords[:, 1], coords.attrs['unit'])
+        t = spot_group["timestamps"].data
+        x = coords[:, 0]
+        y = coords[:, 1]
+        if not monotonously_increasing(t):
+            import warnings
+            warnings.warn('Time is not monotonously increasing, ' +
+                          'removing equal timestamps.')
+            t, (x, y) = remove_eqal_times(t, x, y)
+        t = pq.Quantity(t, spot_group["timestamps"].attrs['unit'])
+        x = pq.Quantity(x, coords.attrs['unit'])
+        y = pq.Quantity(y, coords.attrs['unit'])
 
         return x, y, t
 
