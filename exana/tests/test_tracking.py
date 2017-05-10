@@ -176,3 +176,49 @@ def test_spatial_rate_map_size_error():
                                                  mask_unvisited=False,
                                                  convolve=False,
                                                  return_bins=True)
+
+
+def test_occupancy_map():
+    import quantities as pq
+    from exana.tracking.fields import occupancy_map
+    N = 3
+    binsize = 0.5 * pq.m
+    box_xlen = 1.5 * pq.m
+    box_ylen = 1.5 * pq.m
+    x = np.linspace(0+binsize.magnitude/2.,
+                    box_xlen.magnitude-binsize.magnitude/2, N) * pq.m
+    y = np.linspace(0+binsize.magnitude/2.,
+                    box_ylen.magnitude-binsize.magnitude/2, N) * pq.m
+    t = np.linspace(0, 10., N) * pq.s
+    
+    occmap, xbins, ybins = occupancy_map(x, y, t,
+                                         binsize=binsize,
+                                         box_xlen=box_xlen,
+                                         box_ylen=box_ylen,
+                                         convolve=False,
+                                         return_bins=True)
+    occmap_expected = np.array([[5, 0, 0],
+                                [0, 5, 0],
+                                [0, 0, 5]])
+    assert np.array_equal(occmap, occmap_expected)
+
+
+def test_nvisits_map():
+    # run a testcase with a small trace along a 4 bin box
+    import quantities as pq
+    from exana.tracking.fields import nvisits_map
+    N = 8
+    binsize = 0.5 * pq.m
+    box_xlen = 1. * pq.m
+    box_ylen = 1. * pq.m
+    x = np.array([0.25, 0.75, 0.75, 0.25, 0.25, 0.25, 0.25, 0.75]) * pq.m
+    y = np.array([0.25, 0.25, 0.75, 0.75, 0.25, 0.25, 0.25, 0.75]) * pq.m
+    t = np.linspace(0, 10., N) * pq.s
+    nvisits_map, xbins, ybins = nvisits_map(x, y, t,
+                                            binsize=binsize,
+                                            box_xlen=box_xlen,
+                                            box_ylen=box_ylen,
+                                            return_bins=True)
+    nvisits_map_expected = np.array([[2, 1],
+                                     [1, 2]])
+    assert np.array_equal(nvisits_map, nvisits_map_expected)
