@@ -66,7 +66,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     iy = np.digitize(y, ybins, right=True)
     spike_pos = np.zeros((xbins.size, ybins.size))
     time_pos = np.zeros((xbins.size, ybins.size))
-    for n in range(len(x) - 1):
+    for n in range(len(x)):
         spike_pos[ix[n], iy[n]] += spikes_in_bin[n]
         time_pos[ix[n], iy[n]] += time_in_bin[n]
     # correct for shifting of map since digitize returns values at right edges
