@@ -1,6 +1,44 @@
 import numpy as np
 import pytest
 
+
+def test_cut_to_same_len():
+    from exana.tracking.tools import _cut_to_same_len
+    t = np.arange(12)
+    x = np.arange(11)
+    y = np.arange(11, 24)
+    t_, x_, y_ = _cut_to_same_len(t, x, y)
+    assert np.array_equal(t_, t[:-1])
+    assert np.array_equal(x_, x)
+    assert np.array_equal(y_, y[:-2])
+
+
+def test_remove_eqal_times():
+    from exana.tracking.tools import remove_eqal_times
+    t = np.arange(20)
+    t[4] = t[5]
+    t[6] = t[5]
+    t[8] = t[9]
+    t[10] = t[9]
+    x = np.arange(11)
+    y = np.arange(11, 24)
+    t_, (x_, y_) = remove_eqal_times(t, x, y)
+    t = np.delete(t, [5, 6, 9, 10])
+    x = np.delete(x, [5, 6, 9, 10])
+    y = np.delete(y, [5, 6, 9, 10])
+    assert np.array_equal(t_, t)
+    assert np.array_equal(x_, x)
+    assert np.array_equal(y_, y)
+
+
+def test_monotonously_increasing():
+    from exana.tracking.tools import monotonously_increasing
+    t = np.arange(12)
+    assert monotonously_increasing(t)
+    t[4] = t[5]
+    assert not monotonously_increasing(t)
+
+
 def test_rm_nans():
     """
     Test of rm_nans(x,y,t)
@@ -138,3 +176,49 @@ def test_spatial_rate_map_size_error():
                                                  mask_unvisited=False,
                                                  convolve=False,
                                                  return_bins=True)
+
+
+def test_occupancy_map():
+    import quantities as pq
+    from exana.tracking.fields import occupancy_map
+    N = 3
+    binsize = 0.5 * pq.m
+    box_xlen = 1.5 * pq.m
+    box_ylen = 1.5 * pq.m
+    x = np.linspace(0+binsize.magnitude/2.,
+                    box_xlen.magnitude-binsize.magnitude/2, N) * pq.m
+    y = np.linspace(0+binsize.magnitude/2.,
+                    box_ylen.magnitude-binsize.magnitude/2, N) * pq.m
+    t = np.linspace(0, 10., N) * pq.s
+    
+    occmap, xbins, ybins = occupancy_map(x, y, t,
+                                         binsize=binsize,
+                                         box_xlen=box_xlen,
+                                         box_ylen=box_ylen,
+                                         convolve=False,
+                                         return_bins=True)
+    occmap_expected = np.array([[5, 0, 0],
+                                [0, 5, 0],
+                                [0, 0, 5]])
+    assert np.array_equal(occmap, occmap_expected)
+
+
+def test_nvisits_map():
+    # run a testcase with a small trace along a 4 bin box
+    import quantities as pq
+    from exana.tracking.fields import nvisits_map
+    N = 8
+    binsize = 0.5 * pq.m
+    box_xlen = 1. * pq.m
+    box_ylen = 1. * pq.m
+    x = np.array([0.25, 0.75, 0.75, 0.25, 0.25, 0.25, 0.25, 0.75]) * pq.m
+    y = np.array([0.25, 0.25, 0.75, 0.75, 0.25, 0.25, 0.25, 0.75]) * pq.m
+    t = np.linspace(0, 10., N) * pq.s
+    nvisits_map, xbins, ybins = nvisits_map(x, y, t,
+                                            binsize=binsize,
+                                            box_xlen=box_xlen,
+                                            box_ylen=box_ylen,
+                                            return_bins=True)
+    nvisits_map_expected = np.array([[2, 1],
+                                     [1, 2]])
+    assert np.array_equal(nvisits_map, nvisits_map_expected)

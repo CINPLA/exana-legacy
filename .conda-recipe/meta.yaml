@@ -10,7 +10,9 @@ requirements:
         - python
         - setuptools
         - pip
+        - neo
         - numpy
+        - pandas
         - matplotlib
         - scipy
         - quantities
@@ -20,6 +22,8 @@ requirements:
         - setuptools
         - pip
         - numpy
+        - neo
+        - pandas
         - scipy
         - quantities
         - gitpython

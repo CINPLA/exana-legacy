@@ -66,7 +66,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     iy = np.digitize(y, ybins, right=True)
     spike_pos = np.zeros((xbins.size, ybins.size))
     time_pos = np.zeros((xbins.size, ybins.size))
-    for n in range(len(x) - 1):
+    for n in range(len(x)):
         spike_pos[ix[n], iy[n]] += spikes_in_bin[n]
         time_pos[ix[n], iy[n]] += time_in_bin[n]
     # correct for shifting of map since digitize returns values at right edges
@@ -154,3 +154,160 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
         return max(grids), acorr,  # acorrs[grids.index(max(grids))]
     else:
         return max(grids)
+
+
+def occupancy_map(x, y, t,
+                  binsize=0.01*pq.m,
+                  box_xlen=1*pq.m,
+                  box_ylen=1*pq.m,
+                  convolve=True,
+                  return_bins=False,
+                  smoothing=0.02):
+    '''Divide a 2D space in bins of size binsize**2, count the time spent
+    in each bin. The map can  be convolved with a gaussian kernel of size
+    csize determined by the smoothing factor, binsize and box_xlen.
+
+    Parameters
+    ----------
+    x : quantities.Quantity array in m
+        1d vector of x positions
+    y : quantities.Quantity array in m
+        1d vector of y positions
+    t : quantities.Quantity array in s
+        1d vector of times at x, y positions
+    binsize : float
+        spatial binsize
+    box_xlen : quantities scalar in m
+        side length of quadratic box
+    mask_unvisited: bool
+        mask bins which has not been visited by nans
+    convolve : bool
+        convolve the rate map with a 2D Gaussian kernel
+
+    
+    Returns
+    -------
+    occupancy_map : numpy.ndarray
+    if return_bins = True
+    out : occupancy_map, xbins, ybins
+    '''
+
+    from exana.misc.tools import is_quantities
+    if not all([len(var) == len(var2) for var in [
+            x, y, t] for var2 in [x, y, t]]):
+        raise ValueError('x, y, t must have same number of elements')
+    if box_xlen < x.max() or box_ylen < y.max():
+        raise ValueError(
+            'box length must be larger or equal to max path length')
+    from decimal import Decimal as dec
+    decimals = 1e10
+    remainderx = dec(float(box_xlen)*decimals) % dec(float(binsize)*decimals)
+    remaindery = dec(float(box_ylen)*decimals) % dec(float(binsize)*decimals)
+    if remainderx != 0 or remaindery != 0:
+        raise ValueError('the remainder should be zero i.e. the ' +
+                         'box length should be an exact multiple ' +
+                         'of the binsize')
+    is_quantities([x, y, t], 'vector')
+    is_quantities(binsize, 'scalar')
+    t = t.rescale('s')
+    box_xlen = box_xlen.rescale('m').magnitude
+    box_ylen = box_ylen.rescale('m').magnitude
+    binsize = binsize.rescale('m').magnitude
+    x = x.rescale('m').magnitude
+    y = y.rescale('m').magnitude
+
+    # interpolate one extra timepoint
+    t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))]) * pq.s
+    time_in_bin = np.diff(t_.magnitude)
+    xbins = np.arange(0, box_xlen + binsize, binsize)
+    ybins = np.arange(0, box_ylen + binsize, binsize)
+    ix = np.digitize(x, xbins, right=True)
+    iy = np.digitize(y, ybins, right=True)
+    time_pos = np.zeros((xbins.size, ybins.size))
+    for n in range(len(x)):
+        time_pos[ix[n], iy[n]] += time_in_bin[n]
+    # correct for shifting of map since digitize returns values at right edges
+    time_pos = time_pos[1:, 1:]
+    if convolve:
+        from astropy.convolution import Gaussian2DKernel, convolve_fft
+        csize = (box_xlen / binsize) * smoothing
+        kernel = Gaussian2DKernel(csize)
+        time_pos = convolve_fft(time_pos, kernel)  # TODO edge correction
+    if return_bins:
+        return time_pos.T, xbins, ybins
+    else:
+        return time_pos.T
+
+
+def nvisits_map(x, y, t,
+                binsize=0.01*pq.m,
+                box_xlen=1*pq.m,
+                box_ylen=1*pq.m,
+                return_bins=False):
+    '''Divide a 2D space in bins of size binsize**2, count the
+    number of visits in each bin. The map can  be convolved with
+    a gaussian kernel of size  determined by the smoothing factor,
+    binsize and box_xlen.
+
+    Parameters
+    ----------
+    x : quantities.Quantity array in m
+        1d vector of x positions
+    y : quantities.Quantity array in m
+        1d vector of y positions
+    t : quantities.Quantity array in s
+        1d vector of times at x, y positions
+    binsize : float
+        spatial binsize
+    box_xlen : quantities scalar in m
+        side length of quadratic box
+
+    
+    Returns
+    -------
+    nvisits_map : numpy.ndarray
+    if return_bins = True
+    out : nvisits_map, xbins, ybins
+    '''
+
+    from exana.misc.tools import is_quantities
+    if not all([len(var) == len(var2) for var in [
+            x, y, t] for var2 in [x, y, t]]):
+        raise ValueError('x, y, t must have same number of elements')
+    if box_xlen < x.max() or box_ylen < y.max():
+        raise ValueError(
+            'box length must be larger or equal to max path length')
+    from decimal import Decimal as dec
+    decimals = 1e10
+    remainderx = dec(float(box_xlen)*decimals) % dec(float(binsize)*decimals)
+    remaindery = dec(float(box_ylen)*decimals) % dec(float(binsize)*decimals)
+    if remainderx != 0 or remaindery != 0:
+        raise ValueError('the remainder should be zero i.e. the ' +
+                         'box length should be an exact multiple ' +
+                         'of the binsize')
+    is_quantities([x, y, t], 'vector')
+    is_quantities(binsize, 'scalar')
+    t = t.rescale('s')
+    box_xlen = box_xlen.rescale('m').magnitude
+    box_ylen = box_ylen.rescale('m').magnitude
+    binsize = binsize.rescale('m').magnitude
+    x = x.rescale('m').magnitude
+    y = y.rescale('m').magnitude
+
+    xbins = np.arange(0, box_xlen + binsize, binsize)
+    ybins = np.arange(0, box_ylen + binsize, binsize)
+    ix = np.digitize(x, xbins, right=True)
+    iy = np.digitize(y, ybins, right=True)
+    nvisits_map = np.zeros((xbins.size, ybins.size))
+    for n in range(len(x)):
+        if n == 0:
+            nvisits_map[ix[n], iy[n]] = 1
+        else:
+            if ix[n-1] != ix[n] or iy[n-1] != iy[n]:
+                nvisits_map[ix[n], iy[n]] += 1
+    # correct for shifting of map since digitize returns values at right edges
+    nvisits_map = nvisits_map[1:, 1:]
+    if return_bins:
+        return nvisits_map.T, xbins, ybins
+    else:
+        return nvisits_map.T
