@@ -3,7 +3,7 @@ import pytest
 
 
 def test_cut_to_same_len():
-    from exana.tracking.tools import _cut_to_same_len
+    from exana.tracking.signal_tools import _cut_to_same_len
     t = np.arange(12)
     x = np.arange(11)
     y = np.arange(11, 24)
@@ -14,7 +14,7 @@ def test_cut_to_same_len():
 
 
 def test_remove_eqal_times():
-    from exana.tracking.tools import remove_eqal_times
+    from exana.tracking.signal_tools import remove_eqal_times
     t = np.arange(20)
     t[4] = t[5]
     t[6] = t[5]
@@ -32,7 +32,7 @@ def test_remove_eqal_times():
 
 
 def test_monotonously_increasing():
-    from exana.tracking.tools import monotonously_increasing
+    from exana.tracking.signal_tools import monotonously_increasing
     t = np.arange(12)
     assert monotonously_increasing(t)
     t[4] = t[5]
@@ -44,7 +44,7 @@ def test_rm_nans():
     Test of rm_nans(x,y,t)
     """
     import quantities as pq
-    from exana.tracking.tools import rm_nans
+    from exana.tracking.signal_tools import rm_nans
 
     x = np.arange(0., 10.) * 0.1 * pq.m
     y = np.arange(0., 10.) * 1.0 * pq.m

@@ -1,6 +1,6 @@
 import numpy as np
 import quantities as pq
-from ..misc.tools import is_quantities
+from ..misc.signal_tools import is_quantities
 
 
 def head_direction_rate(sptr, head_angles, t, binsize=4, n_avg_bin=4):
@@ -26,7 +26,7 @@ def head_direction_rate(sptr, head_angles, t, binsize=4, n_avg_bin=4):
         binned angles, avg rate in corresponding bins
     """
     assert head_angles.units == pq.degrees, "Angles must be in degrees"
-    from ..misc.tools import moving_average
+    from ..misc.signal_tools import moving_average
     # make bins around angle measurements
     spikes_in_bin, _ = np.histogram(sptr, t)
     # take out the first and every other bin
@@ -105,7 +105,7 @@ def head_direction(x1, y1, x2, y2, t, return_rad=True, filt=2.):
     -------
     out : angles, resized t
     """
-    from .tools import _cut_to_same_len
+    from .signal_tools import _cut_to_same_len
     x1, y1, x2, y2, t = _cut_to_same_len(x1, y1, x2, y2, t)
     import math
     measurements = len(x2)

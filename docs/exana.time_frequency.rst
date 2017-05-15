@@ -20,10 +20,10 @@ exana.time_frequency.timefreq module
     :undoc-members:
     :show-inheritance:
 
-exana.time_frequency.tools module
+exana.time_frequency.signal_tools module
 ---------------------------------
 
-.. automodule:: exana.time_frequency.tools
+.. automodule:: exana.time_frequency.signal_tools
     :members:
     :undoc-members:
     :show-inheritance:

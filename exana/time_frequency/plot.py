@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import quantities as pq
-from ..misc.tools import is_quantities
+from ..misc.signal_tools import is_quantities
 from .timefreq import TimeFreq
 
 

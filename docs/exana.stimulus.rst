@@ -12,10 +12,10 @@ exana.stimulus.plot module
     :undoc-members:
     :show-inheritance:
 
-exana.stimulus.tools module
+exana.stimulus.signal_tools module
 ---------------------------
 
-.. automodule:: exana.stimulus.tools
+.. automodule:: exana.stimulus.signal_tools
     :members:
     :undoc-members:
     :show-inheritance:
