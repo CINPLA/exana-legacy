@@ -20,10 +20,10 @@ exana.statistics.plot module
     :undoc-members:
     :show-inheritance:
 
-exana.statistics.signal_tools module
+exana.statistics.tools module
 -----------------------------
 
-.. automodule:: exana.statistics.signal_tools
+.. automodule:: exana.statistics.tools
     :members:
     :undoc-members:
     :show-inheritance:

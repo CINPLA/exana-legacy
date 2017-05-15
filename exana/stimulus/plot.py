@@ -2,11 +2,11 @@ import neo
 import numpy as np
 import matplotlib.pyplot as plt
 import quantities as pq
-from .signal_tools import *
+from .tools import *
 from ..misc.plot import simpleaxis
 from ..statistics.plot import (plot_spike_histogram)
 from ..general.plot import (plot_raster)
-from ..statistics.signal_tools import (fano_factor_linregress)
+from ..statistics.tools import (fano_factor_linregress)
 
 
 def plot_psth(epo=None, t_start=None, t_stop=None, trials=None, unit=None,

@@ -1,6 +1,6 @@
 import numpy as np
 import quantities as pq
-from ..misc.signal_tools import find_first_peak, is_quantities
+from ..misc.tools import find_first_peak, is_quantities
 
 
 def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,

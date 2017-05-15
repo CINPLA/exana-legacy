@@ -1,6 +1,6 @@
 import numpy as np
 import quantities as pq
-from ..misc.signal_tools import is_quantities, normalize
+from ..misc.tools import is_quantities, normalize
 
 
 def _cut_to_same_len(*args):

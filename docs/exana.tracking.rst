@@ -36,10 +36,10 @@ exana.tracking.stats module
     :undoc-members:
     :show-inheritance:
 
-exana.tracking.signal_tools module
+exana.tracking.tools module
 ---------------------------
 
-.. automodule:: exana.tracking.signal_tools
+.. automodule:: exana.tracking.tools
     :members:
     :undoc-members:
     :show-inheritance:

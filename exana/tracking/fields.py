@@ -34,7 +34,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     if return_bins = True
     out : rate map, xbins, ybins
     """
-    from exana.misc.signal_tools import is_quantities
+    from exana.misc.tools import is_quantities
     if not all([len(var) == len(var2) for var in [x,y,t] for var2 in [x,y,t]]):
         raise ValueError('x, y, t must have same number of elements')
     if box_xlen < x.max() or box_ylen < y.max():
@@ -119,7 +119,7 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
     '''
     from scipy.ndimage.interpolation import rotate
     import numpy.ma as ma
-    from exana.misc.signal_tools import (is_quantities, fftcorrelate2d,
+    from exana.misc.tools import (is_quantities, fftcorrelate2d,
                                             masked_corrcoef2d)
     is_quantities([box_xlen, box_ylen, step_size], 'scalar')
     box_xlen = box_xlen.rescale('m').magnitude
@@ -192,7 +192,7 @@ def occupancy_map(x, y, t,
     out : occupancy_map, xbins, ybins
     '''
 
-    from exana.misc.signal_tools import is_quantities
+    from exana.misc.tools import is_quantities
     if not all([len(var) == len(var2) for var in [
             x, y, t] for var2 in [x, y, t]]):
         raise ValueError('x, y, t must have same number of elements')
@@ -270,7 +270,7 @@ def nvisits_map(x, y, t,
     out : nvisits_map, xbins, ybins
     '''
 
-    from exana.misc.signal_tools import is_quantities
+    from exana.misc.tools import is_quantities
     if not all([len(var) == len(var2) for var in [
             x, y, t] for var2 in [x, y, t]]):
         raise ValueError('x, y, t must have same number of elements')
