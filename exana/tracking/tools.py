@@ -174,7 +174,7 @@ def interp_filt_position(x, y, tm, box_xlen=1 * pq.m, box_ylen=1 * pq.m,
 
     R = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
     V = R / np.diff(t)
-    print('Maximum speed {} {}'.format(V.max(), V.dimensionality))
+    print('Maximum speed {}'.format(V.max()))
     return x, y, t
 
 
