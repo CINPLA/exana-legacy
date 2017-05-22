@@ -18,7 +18,7 @@ def plot_waveforms(sptr, color='r', fig=None, title='waveforms', lw=2, gs=None):
     -------
     out : fig
     """
-    print('ciao')
+    import matplotlib.gridspec as gridspec
     nrc = sptr.waveforms.shape[1]
     if fig is None:
         fig = plt.figure()
@@ -48,7 +48,8 @@ def plot_waveforms(sptr, color='r', fig=None, title='waveforms', lw=2, gs=None):
         fig.suptitle(title)
     else:
         for c in range(nrc):
-            ax = fig.add_subplot(gs[:, c], sharex=ax, sharey=ax)
+            gs0 = gridspec.GridSpecFromSubplotSpec(1, nrc, subplot_spec=gs)
+            ax = fig.add_subplot(gs0[:, c], sharex=ax, sharey=ax)
             axs.append(ax)
         for c in range(nrc):
             wf = sptr.waveforms[:, c, :]
