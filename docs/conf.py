@@ -75,8 +75,10 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'exana'
-copyright = '2017, Svenn-Arne Dragly, Milad H. Mobarhan, Mikkel E. Lepperød'
-author = 'Svenn-Arne Dragly, Milad H. Mobarhan, Mikkel E. Lepperød'
+copyright = ('2017, Mikkel E. Lepperød, Milad H. Mobarhan, Alessio Buccino, ' +
+             'Tristan Stöber, Svenn-Arne Dragly')
+author = ('Mikkel E. Lepperød, Milad H. Mobarhan, Alessio Buccino, ' +
+          'Tristan Stöber, Svenn-Arne Dragly')
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -161,7 +163,8 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'exana.tex', 'exana Documentation',
-     'Svenn-Arne Dragly, Milad H. Mobarhan, Mikkel E. Lepperød', 'manual'),
+     'Mikkel E. Lepperød, Milad H. Mobarhan, Alessio Buccino, ' +
+     'Tristan Stöber, Svenn-Arne Dragly', 'manual'),
 ]
 
 
