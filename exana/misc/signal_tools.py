@@ -357,6 +357,9 @@ def ground_bad_channels(anas, bad_channels):
     :param bad_channels:
     :return:
     '''
+
+    print('Grounding channels: ', bad_channels, '...')
+
     from copy import copy
     nsamples = anas.shape[1]
     anas_zeros = copy(anas)
