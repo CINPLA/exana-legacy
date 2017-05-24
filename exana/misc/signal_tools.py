@@ -373,6 +373,53 @@ def ground_bad_channels(anas, bad_channels):
     return anas_zeros
 
 
+def duplicate_bad_channels(anas, bad_channels, probefile):
+    '''
+
+    :param anas:
+    :param bad_channels:
+    :param probefile:
+    :return:
+    '''
+
+    print('Duplicating good channels on channels: ', bad_channels, '...')
+
+    def _select_rnd_chan_in_group(channel_map, ch_idx):
+        for group_idx, group in channel_map.items():
+            if ch_idx in group['channels']:
+                gr = np.array(group['channels'])
+                rnd_idx = np.random.choice(gr[gr != ch_idx])
+                return rnd_idx
+
+    def _read_python(path):
+        from six import exec_
+        path = op.realpath(op.expanduser(path))
+        assert op.exists(path)
+        with open(path, 'r') as f:
+            contents = f.read()
+        metadata = {}
+        exec_(contents, {}, metadata)
+        metadata = {k.lower(): v for (k, v) in metadata.items()}
+        return metadata
+
+
+    probefile_ch_mapping = _read_python(probefile)['channel_groups']
+
+    from copy import copy
+    nsamples = anas.shape[1]
+    anas_dup = copy(anas)
+    if type(bad_channels) is not list:
+        bad_channels = [bad_channels]
+
+    for i, ana in enumerate(anas_dup):
+        if i in bad_channels:
+            rnd = _select_rnd_chan_in_group(probefile_ch_mapping, i)
+            anas_dup[i] = anas[rnd]
+
+    return anas_dup
+
+
+
 def save_binary_format(filename, signal, spikesorter='klusta'):
     '''
 
