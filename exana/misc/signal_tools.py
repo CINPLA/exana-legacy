@@ -533,6 +533,52 @@ def remove_stimulation_artifacts(anas, times, trigger, pre=3 * pq.ms, post=5 * p
     return anas_rem, avg_artifact
 
 
+def extract_stimulation_waveform(stim, triggers, times):
+    '''
+
+    :param stim:
+    :param triggers:
+    :param times:
+    :return:
+    '''
+    period = np.mean(np.diff(times))
+
+    if len(triggers) > 1:
+        idx = np.where((times > triggers[0]-1*period) & (times < triggers[1]))
+        stim_clip = np.squeeze(stim[:, idx[0]])
+    else:
+        stim_clip = stim
+
+    # clip last zeros
+    last_non_zero = stim_clip.shape[1] - np.where(stim_clip[0][::-1] != 0)[0][0]
+    stim_clip = stim_clip[:,:last_non_zero]
+
+    curr = []
+    phase = []
+
+    for ch, st in enumerate(stim_clip):
+        current_levels = np.unique(stim_clip)
+        transitions = np.where(np.diff(st) != 0)
+        start=0
+        currs=[]
+        phases=[]
+        for t in transitions:
+            print(start)
+            currs.append(np.round(st[start+1]))
+            phases.append((t-start+1)*period)
+            start = start+t
+        print(start)
+        #add last phase
+        currs.append(np.round(st[start+1]))
+        phases.append((len(st)-(start+1))*period)
+
+        curr.append(currs)
+        phase.append(phases)
+
+    print(np.round(current_levels))
+    return stim_clip, curr, phase
+
+
 def downsample_250(anas):
     import neo
     import quantities as pq
