@@ -155,10 +155,11 @@ def apply_CAR(anas, channels=None, car_type='mean', split_probe=None):
     elif car_type is 'median':
         print('Applying CMR')
         if split_probe is not None:
-            avg_ref = np.median(anas_car[:split_probe], axis=0)
-            anas_car[:split_probe] -= avg_ref
-            avg_ref = np.median(anas_car[split_probe:], axis=0)
-            anas_car[split_probe:] -= avg_ref
+            avg_ref_1 = np.median(anas_car[:split_probe], axis=0)
+            anas_car[:split_probe] -= avg_ref_1
+            avg_ref_2 = np.median(anas_car[split_probe:], axis=0)
+            anas_car[split_probe:] -= avg_ref_2
+            avg_ref = np.array([avg_ref_1, avg_ref_2])
         else:
             avg_ref = np.median(anas_car[channels], axis=0)
             anas_car[channels] -= avg_ref
