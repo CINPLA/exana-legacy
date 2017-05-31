@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import quantities as pq
-from .fields import gridness, spatial_rate_map
+from .fields import gridness, spatial_rate_map, occupancy_map
 from .head import *
 from ..misc.plot import simpleaxis
 import math
@@ -148,9 +148,44 @@ def plot_ratemap(x, y, t, sptr, binsize=0.05*pq.m, box_size=1*pq.m,
     rate_map = spatial_rate_map(x, y, t, sptr, binsize=binsize,
                                  mask_unvisited=mask_unvisited, box_size=box_size,
                                  convolve=convolve)
-    print('ciao')
     ax.imshow(rate_map, interpolation='none', origin=origin,
               extent=(0, 1, 0, 1), vmin=vmin, cmap=cmap)
     ax.set_title('%.2f Hz' % np.nanmax(rate_map))
     ax.grid(False)
     return ax
+
+
+def plot_occupancy(x, y, t, binsize=0.05*pq.m, box_xlen=1*pq.m, box_ylen=1*pq.m,
+                  vmin=0, ax=None, convolve=True,
+                  origin='upper', cmap='jet'):
+    """
+
+
+    Parameters
+    ----------
+    x : 1d vector of x positions
+    y : 1d vector of y positions
+    t : 1d vector of time at x, y positions
+    sptr : one neo.SpikeTrain
+    binsize : size of spatial 2d square bins
+    vmin : color min
+    ax : matplotlib axes
+    mask_unvisited : True: mask bins which has not been visited
+
+    Returns
+    -------
+    out : axes
+    """
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, xlim=[0, 1], ylim=[0, 1], aspect=1)
+
+    occ_map = occupancy_map(x, y, t, binsize=binsize, box_xlen=box_xlen,
+                             box_ylen=box_ylen, convolve=convolve)
+    cax = ax.imshow(occ_map, interpolation='none', origin=origin,
+                   extent=(0, 1, 0, 1), vmin=vmin, cmap=cmap, aspect='auto')
+    # ax.set_title('%.2f s' % np.nanmax(occ_map))
+    ax.grid(False)
+    return cax, np.nanmax(occ_map)
+
+
