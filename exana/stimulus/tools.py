@@ -339,6 +339,67 @@ def print_epo(epo, N=20):
 ###############################################################################
 #                           Analysis
 ###############################################################################
+def wrap_angle(angle, wrap_range=360.):
+    '''
+    wraps angle in to the interval [0, wrap_range]
+    ----------
+    angle : numpy.array/float
+        input array/float
+    wrap_range : float
+        wrap range (eg. 360 or 2pi)
+
+    Returns
+    -------
+    out : numpy.array/float
+        angle in interval [0, wrap_range]
+
+    '''
+    return angle - wrap_range * np.floor(angle/float(wrap_range))
+
+
+def compute_osi(rates, orients):
+    # TODO: write tests
+    '''
+    calculates orientation selectivity index
+
+    Parameters
+    ----------
+    rates : quantity array
+        array of mean firing rates
+    orients : quantity array
+        array of orientations
+
+    Returns
+    -------
+    out : quantity scalar
+        preferred orientation
+    out : float
+        selectivity index
+    '''
+
+    orients = orients.rescale(pq.deg)
+    preferred = np.where(rates == rates.max())
+    null_angle = wrap_angle(orients[preferred] + 180*pq.deg, wrap_range=360.)
+
+    null = np.where(orients == null_angle)
+    if len(null[0]) == 0:
+        raise Exception("orientation not found: "+str(null_angle))
+
+    orth_angle_p = wrap_angle(orients[preferred] + 90*pq.deg, wrap_range=360.)
+    orth_angle_n = wrap_angle(orients[preferred] - 90*pq.deg, wrap_range=360.)
+    orth_p = np.where(orients == orth_angle_p)
+    orth_n = np.where(orients == orth_angle_n)
+
+    if len(orth_p[0]) == 0:
+        raise Exception("orientation not found: " + str(orth_angle_p))
+    if len(orth_n[0]) == 0:
+        raise Exception("orientation not found: " + str(orth_angle_n))
+
+    index = 1. - (rates[orth_p] + rates[orth_n]) / (rates[preferred]+rates[null])
+
+    return float(orients[preferred])*orients.units, float(index)
+
+
 def compute_spontan_rate(chxs, stim_off_epoch):
     # TODO: test
     '''
