@@ -9,6 +9,33 @@ from ..general.plot import (plot_raster)
 from ..statistics.tools import (fano_factor_linregress)
 
 
+def orient_raster_plots(trials, save_path=None):
+    # TODO: add save fig
+    """
+    Makes raster plot for each stimulus orientation
+
+    Parameters
+    ----------
+    trials : defaultdict(dict)
+        trials[channel_index_name][unit_id] = list of spike_train trials.
+    """
+    orient_trials = make_orientation_trials(trials)
+    col_count = 4
+    row_count = int(np.ceil(len(orient_trials))/col_count)
+    fig = plt.figure(figsize=(2*col_count, 2*row_count))
+    for i, (orient, trials) in enumerate(orient_trials.items()):
+        ax = fig.add_subplot(row_count, col_count, i+1)
+        ax = plot_raster(trials, ax=ax)
+        ax.set_title(orient)
+        ax.grid()
+    fig.tight_layout()
+
+    if save_path is not None:
+        plt.savefig(save_path, fig)
+
+    return fig
+
+
 def plot_psth(epo=None, t_start=None, t_stop=None, trials=None, unit=None,
               sptr=None, output='counts', binsize=None, bins=100, fig=None,
               color='b', title='plot_psth', stim_color='b', edgecolor='k',
