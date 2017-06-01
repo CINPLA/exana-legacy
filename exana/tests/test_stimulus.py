@@ -100,7 +100,7 @@ def test_compute_orientation_tuning():
 def test_make_orientation_trials():
     from neo.core import SpikeTrain
     from exana.stimulus.tools import (make_orientation_trials,
-                                      _convert_string_to_quantity_scalar)
+                                      convert_string_to_quantity_scalar)
 
     trials = [SpikeTrain(np.arange(0, 10, 2)*pq.s, t_stop=10*pq.s,
                          orient=315. * pq.deg),
@@ -118,7 +118,7 @@ def test_make_orientation_trials():
     for (key, value), trial, orient in zip(orient_trials.items(),
                                            sorted_trials,
                                            sorted_orients):
-        key = _convert_string_to_quantity_scalar(key)
+        key = convert_string_to_quantity_scalar(key)
         assert(key == orient.magnitude)
         for t, st in zip(value, trial):
             assert((t == st).all())

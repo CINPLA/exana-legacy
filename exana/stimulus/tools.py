@@ -27,7 +27,7 @@ def _rescale_orients(trials, unit=pq.deg):
         trial.annotations["orient"] = orient.rescale(unit)
 
 
-def _convert_quantity_scalar_to_string(value):
+def convert_quantity_scalar_to_string(value):
     """
     converts quantity scalar to string
 
@@ -43,7 +43,7 @@ def _convert_quantity_scalar_to_string(value):
     return str(value.magnitude)+" "+value.dimensionality.string
 
 
-def _convert_string_to_quantity_scalar(value):
+def convert_string_to_quantity_scalar(value):
     """
     converts string to quantity scalar
 
@@ -136,11 +136,11 @@ def make_orientation_trials(trials, unit=pq.deg):
 
     for trial in trials:
         orient = trial.annotations["orient"]
-        key = _convert_quantity_scalar_to_string(orient)
+        key = convert_quantity_scalar_to_string(orient)
         sorted_trials[key].append(trial)
 
     return OrderedDict(sorted(sorted_trials.items(),
-                              key=lambda x: _convert_string_to_quantity_scalar(x[0]).magnitude))
+                              key=lambda x: convert_string_to_quantity_scalar(x[0]).magnitude))
 
 
 def make_spiketrain_trials(epo, t_start, t_stop, unit=None, sptr=None):
@@ -442,7 +442,7 @@ def compute_spontan_rate(chxs, stim_off_epoch):
 
 def compute_orientation_tuning(orient_trials):
     from exana.stimulus.tools import (make_orientation_trials,
-                                      _convert_string_to_quantity_scalar)
+                                      convert_string_to_quantity_scalar)
     '''
     Calculates the mean firing rate for each orientation
 
@@ -468,7 +468,7 @@ def compute_orientation_tuning(orient_trials):
     orients = np.zeros((orient_count)) * unit_orients
 
     for i, (orient, trials) in enumerate(orient_trials.items()):
-        orient = _convert_string_to_quantity_scalar(orient)
+        orient = convert_string_to_quantity_scalar(orient)
         rate = 0 * unit_rates
 
         for trial in trials:
@@ -505,8 +505,7 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
         mask = (rate.times > 0*pq.ms) & (rate.times < 250*pq.ms)
         spont_mask = (rate.times > -250*pq.ms) & (rate.times < 0*pq.ms)
         # spk, ind = find_max_peak(rate_mag[mask])
-        krit1 = rate_mag[mask].mean() + rate_mag[mask].std() > \
-                rate_mag[spont_mask].mean() + rate_mag[spont_mask].std()
+        krit1 = rate_mag[mask].mean() + rate_mag[mask].std() > rate_mag[spont_mask].mean() + rate_mag[spont_mask].std()
         spike_mask = (trial.times > 0*pq.ms) & (trial.times < search_stop)
         krit2 = len(trial.times[spike_mask])/search_stop.rescale('s') > 1.*pq.Hz
         if not krit1 and krit2:
