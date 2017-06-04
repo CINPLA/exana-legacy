@@ -1,4 +1,7 @@
 # exana
+
+[![Coverage Status](https://coveralls.io/repos/github/CINPLA/exana/badge.svg)](https://coveralls.io/github/CINPLA/exana)
+
 Numerical analysis of neuroscience data
 
 This is a common repository for analysis scripts that are as general as possible
