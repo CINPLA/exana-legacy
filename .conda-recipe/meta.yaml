@@ -4,7 +4,7 @@ package:
 source:
     git_url: ..
 build:
-    script: python setup.py install
+    script: pip install neo && python setup.py install
 requirements:
     build:
         - python
@@ -16,7 +16,6 @@ requirements:
         - matplotlib
         - scipy
         - quantities
-        - gitpython
     run:
         - python
         - setuptools
@@ -26,7 +25,6 @@ requirements:
         - pandas
         - scipy
         - quantities
-        - gitpython
 test:
   imports:
     - exana
