@@ -187,5 +187,3 @@ def plot_occupancy(x, y, t, binsize=0.05*pq.m, box_xlen=1*pq.m, box_ylen=1*pq.m,
     # ax.set_title('%.2f s' % np.nanmax(occ_map))
     ax.grid(False)
     return cax, np.nanmax(occ_map)
-
-

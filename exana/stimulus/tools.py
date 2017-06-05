@@ -144,6 +144,7 @@ def make_orientation_trials(trials, unit=pq.deg):
 
 
 def make_spiketrain_trials(epo, t_start, t_stop, unit=None, sptr=None):
+    # TODO: add test 
     '''
     Makes trials based on an Epoch and given temporal bound
 
@@ -190,7 +191,7 @@ def make_spiketrain_trials(epo, t_start, t_stop, unit=None, sptr=None):
         t_start = t_starts[j].rescale(dim)
         t_stop = t_stops[j].rescale(dim)
         spikes = []
-        for spike in sptr[(t+t_start < sptr) & (sptr < t+t_stop)]:
+        for spike in sptr[(t+t_start <= sptr) & (sptr < t+t_stop)]:
             spikes.append(spike-t)
         trials.append(SpikeTrain(times=spikes*pq.s,
                                  t_start=t_start,
