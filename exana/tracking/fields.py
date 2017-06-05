@@ -184,7 +184,7 @@ def occupancy_map(x, y, t,
     convolve : bool
         convolve the rate map with a 2D Gaussian kernel
 
-    
+
     Returns
     -------
     occupancy_map : numpy.ndarray
@@ -262,7 +262,7 @@ def nvisits_map(x, y, t,
     box_xlen : quantities scalar in m
         side length of quadratic box
 
-    
+
     Returns
     -------
     nvisits_map : numpy.ndarray
