@@ -48,7 +48,7 @@ def has_ten_spikes(spiketrain):
     -------
     >>> import neo
     >>> spiketrain = neo.SpikeTrain(times=list(range(10)), tstop=10, units='s')
-    >>> my_analysis_function(spiketrain)
+    >>> has_ten_spikes(spiketrain)
     True
     """
     if len(spiketrain) == 10:
