@@ -33,28 +33,28 @@ Test your code as much as possible, and preferably make a proper test case runna
 
 ```python
 def has_ten_spikes(spiketrain):
-  """
-  Parameters
-  ----------
-  spiketrain : neo.SpikeTrain
-      A neo spike train with spike times.
+    """
+    Parameters
+    ----------
+    spiketrain : neo.SpikeTrain
+        A neo spike train with spike times.
 
-  Returns
-  -------
-  bool
-      True if successful, False otherwise.
+    Returns
+    -------
+    bool
+        True if successful, False otherwise.
   
-  Example
-  -------
-  >>> import neo
-  >>> spiketrain = neo.SpikeTrain(times=list(range(10)), tstop=10, units='s')
-  >>> my_analysis_function(spiketrain)
-  True
-  """
-  if len(spiketrain) == 10:
-    return True
-  else:
-    return False
+    Example
+    -------
+    >>> import neo
+    >>> spiketrain = neo.SpikeTrain(times=list(range(10)), tstop=10, units='s')
+    >>> my_analysis_function(spiketrain)
+    True
+    """
+    if len(spiketrain) == 10:
+        return True
+    else:
+        return False
 ```
 
 To run tests, simply run in the command line
