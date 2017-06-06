@@ -4,7 +4,28 @@ Exana is a library with tools and visualisers for analysis of electrophysiologic
  
 Exana is a repository that contains the analysis tools we use in the lab which is general enough to be used for a wider audience. We do not claim to be the first or the only one to do this, there exist excellent open source tools out there such as `elephant` and `fieldtrip` to mention some. We only want to contribute to the community, by sharing our tools that we cannot find already made out there.
 
+## Installation
+
+**Alternative 1)**
+
+Clone this repository and install with python
+
+```
+git clone https://github.com/CINPLA/exana.git
+python setup.py develop
+```
+**Alternative 2)**
+
+Download Anaconda 3 and install with conda
+
+```
+conda install exana -c cinpla -c defaults -c conda-forge
+```
+
+
 ## Development
+
+Please fork and send pull requests for contributions.
 
 Exana depends on `neo` and `numpy`, to keep the global dependencies to a minimum please import special dependencies inside functions. Please conform to pep8 and write docstrings in the [numpy style](http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html).
 
