@@ -40,17 +40,18 @@ def spines_edge_color(ax, edges={"top": "none", "bottom": "w",
     edges : dictionary
         edges as keys with colors as key values
     """
-    
+
     if edges is None:
         edges = {"top": "none", "bottom": "none",
                  "right": "none", "left": "none"}
     for edge, color in edges.iteritems():
         ax.spines[edge].set_edgecolor(color)
-        
-        
+
+
 def remove_ticklabels(ax, x_axis=True, y_axis=True):
     """
     Remove ticklabels
+
     Parameters
     ----------
     Required arguments
@@ -75,9 +76,9 @@ def remove_ticklabels(ax, x_axis=True, y_axis=True):
 def move_spines(ax, edges={"bottom": 0, "left": 0}):
     """
     Move spines
+
     Parameters
     ----------
-    Required arguments
     ax : matplotlib.axis
         axis object
     edges : dictionary
@@ -168,8 +169,8 @@ def colormap(color=0):
 
 #########################################################################################
 if __name__ == "__main__":
-    import numpy as np 
-    
+    import numpy as np
+
     t = np.linspace(0, 100, 1000)
     fig = plt.figure()
     ax = fig.add_subplot(111)

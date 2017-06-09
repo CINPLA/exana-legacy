@@ -9,6 +9,7 @@ def auto_denoise(anas, thresh=None):
     '''
     Clean neural data from EMG, chewing, and moving artifact noise
     Rectified signals are smoothed and thresholded to find and remove noisy portion of the signals
+
     :param anas: np.array analog signals
     :param thresh: (optional) threshold in number of SD on high-pass data
     :return: cleaned_anas
@@ -50,6 +51,7 @@ def manual_denoise(anas, thresh=None):
     '''
     Clean neural data from EMG, chewing, and moving artifact noise
     User can select the points to cut out for the denoised signal
+
     :param anas: np.array analog signals
     :param thresh: (optional) threshold in number of SD on high-pass data
     :return: cleaned_anas
@@ -82,6 +84,7 @@ def ica_denoise(anas, channels=None, n_comp=None, correlation_thresh=None):
     '''
     Removes noise by ICA. Indepentend components highly correlated to the grand average of the signals are removed.
     Signals are then back projected to the channel space.
+
     :param anas: analog signals (N channels by T time samples)
     :param channels: channels to be used
     :param n_comp: number of IC

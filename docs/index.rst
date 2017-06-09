@@ -6,11 +6,11 @@ Exana is a python module for neuroscientific data analysis.
 .. toctree::
    :maxdepth: 2
    :hidden:
-   
+
    installation
    developers_guide
    authors
-   exana
+   modules
 
 Indices and tables
 ==================
