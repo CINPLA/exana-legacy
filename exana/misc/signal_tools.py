@@ -1,5 +1,3 @@
-import expipe
-import expipe.io
 import os
 import os.path as op
 import numpy as np
