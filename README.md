@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.org/CINPLA/exana.svg)](https://travis-ci.org/CINPLA/exana)
+[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/latest/active.svg)](http://www.repostatus.org/#active)
+[![Anaconda-Server Badge](https://anaconda.org/cinpla/exana/badges/installer/conda.svg)](https://conda.anaconda.org/cinpla)
+[![codecov](https://codecov.io/gh/CINPLA/exana/branch/dev/graph/badge.svg)](https://codecov.io/gh/CINPLA/exana)
 # exana
 
 Exana is a library with tools and visualisers for analysis of electrophysiological data in neuroscience. Some are built by our team and some are collected from other projects for availability and to reduce the number of dependencies when performing analysis. The philosophy behind this project is not to give polished production ready analysis tools. Rather, we want to provide useful, tested tools and more importantly generate collaboration on development. We recognize that many labs are building many similar tools for in house analysis that is only available to the public via the methods section in publications. By sharing our analysis we hope that rather than building the same tools over and over again we (the neuroscience community) can together build robust analysis methods.
