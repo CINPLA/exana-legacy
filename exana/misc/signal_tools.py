@@ -155,7 +155,7 @@ def ica_denoise(anas, channels=None, n_comp=10, correlation_thresh=0.1):
     return anas_sig, anas_noise, sources, mixing, corr
 
 
-def apply_CAR(anas, channels=None, car_type='mean', split_probe=None):
+def apply_CAR(anas, channels=None, car_type='mean', split_probe=None, copy_signal=True):
     """Removes noise by Common Average or Median Reference.
 
     Parameters
@@ -178,8 +178,10 @@ def apply_CAR(anas, channels=None, car_type='mean', split_probe=None):
     from copy import copy
     if channels is None:
         channels = np.arange(anas.shape[0])
-    anas_car = copy(anas)
-    del anas
+    if copy_signal:
+        anas_car = copy(anas)
+    else:
+        anas_car = anas
     anas_car = np.array(anas_car, dtype=np.float32)
 
     if car_type is 'mean':
@@ -297,7 +299,7 @@ def ground_bad_channels(anas, bad_channels, copy_signal=True):
 
     from copy import copy
     nsamples = anas.shape[1]
-    if copy_signal
+    if copy_signal:
         anas_zeros = copy(anas)
     else:
         anas_zero = anas
