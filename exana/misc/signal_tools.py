@@ -1,5 +1,3 @@
-import expipe
-import expipe.io
 import os
 import os.path as op
 import numpy as np
@@ -226,6 +224,7 @@ def extract_rising_edges(adc_signal, times, thresh=1.65):
     -------
     rising_times : np.array with rising times
     """
+    print('im here')
     idx_high = np.where(adc_signal>1.65)[0]
 
     rising = []
@@ -237,7 +236,7 @@ def extract_rising_edges(adc_signal, times, thresh=1.65):
                 rising.append(idx)
             elif idx - 1 != idx_high[i-1]:
                 rising.append(idx)
-    rising_times = np.array(times[rising])
+    rising_times = times[rising]
 
     return rising_times
 
