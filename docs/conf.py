@@ -23,7 +23,7 @@ import exana
 import sys
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../exana'))
-# sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('../'))
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if not on_rtd:  # only import and set the theme if we're building docs locally

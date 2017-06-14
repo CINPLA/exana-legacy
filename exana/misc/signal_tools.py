@@ -70,6 +70,15 @@ def manual_denoise(anas, thresh=None, copy_signal=True):
     copy_anas : bool
                 copy signals or not
 
+    Parameters
+    ----------
+    anas : np.array 
+           2d array of analog signals
+    thresh : float
+             (optional) threshold in number of SD on high-pass data
+    copy_anas : bool
+                copy signals or not
+
     Returns
     -------
     anas_copy :  cleaned analog signals
