@@ -24,14 +24,17 @@ def sparsity(rate_map, px):
     to space the adaptation measures the fraction of the environment  in which
     a cell is  active. A sparsity of, 0.1 means that the place field of the
     cell occupies 1/10 of the area the rat traverses [2]_
+
     Parameters
     ----------
     rate_map : numpy.ndarray
         A firing rate map, any number of dimensions.
+
     Returns
     -------
     out : float
         sparsity
+
     References
     ----------
     .. [2] Skaggs, W. E., McNaughton, B. L., Wilson, M., & Barnes, C. (1996).
@@ -49,14 +52,17 @@ def selectivity(rate_map, px):
     '''"The selectivity measure max(rate)/mean(rate)  of the cell. The more
     tightly concentrated  the cell's activity, the higher the selectivity.
     A cell with no spatial tuning at all will  have a  selectivity of 1" [2]_.
+
     Parameters
     ----------
     rate_map : numpy.ndarray
         A firing rate map, any number of dimensions.
+
     Returns
     -------
     out : float
         selectivity
+
     References
     ----------
     .. [2] Skaggs, W. E., McNaughton, B. L., Wilson, M., & Barnes, C. (1996).
@@ -75,6 +81,7 @@ def information_rate(rate_map, px):
     A simple algorithm devised by [1]_. This computes the spatial information
     rate of cell spikes given variable x (e.g. position, head direction) in
     bits/second. This function is copied from Lucas Solanka, Matt Nolans lab
+
     Parameters
     ----------
     rate_map : numpy.ndarray
@@ -83,6 +90,7 @@ def information_rate(rate_map, px):
     px : numpy.ndarray
         Probability density function for variable ``x``. ``px.shape`` must be
         equal ``rate_maps.shape``
+
     Returns
     -------
     I : float
@@ -118,6 +126,7 @@ def information_specificity(rate_map, px):
     Compute :func:`information_rate` for this cell and divide by the average
     firing rate of the cell. See [1]_ for more information. This function is
     copied from Lucas Solanka, Matt Nolans lab
+
     Parameters
     ----------
     rate_map : numpy.ndarray
@@ -125,10 +134,12 @@ def information_specificity(rate_map, px):
     px : numpy.ndarray
         Probability density function for variable ``x``. ``px.shape`` must be
         equal ``rate_maps.shape``
+
     Returns
     -------
     I : float
         Information in bits/spike.
+
     References
     ----------
     .. [1] Skaggs, W.E. et al., 1993. An Information-Theoretic Approach to
@@ -147,6 +158,7 @@ def prob_dist(x, y, bins):
     x : quantities.Quantity array in m
     y : quantities.Quantity array in m
     bins : quantities.Quantity array in m
+
     Returns
     -------
     dist : numpy.ndarray
