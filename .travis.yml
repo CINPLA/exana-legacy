@@ -6,10 +6,19 @@ python:
 install:
   - source libs/travis-conda-scripts/scripts/config.sh
   - bash -ex libs/travis-conda-scripts/scripts/travis_install.sh
+before_script:
+  # this is for running test coverage on travis
+  - pip install numpy matplotlib scipy astropy
+  - pip install git+https://github.com/python-quantities/python-quantities.git
+  - pip install pytest coverage codecov
+  - python setup.py install
 script:
+  - coverage run --source exana -m py.test -s --doctest-modules --ignore setup.py
+  - coverage report
   - source libs/travis-conda-scripts/scripts/config.sh
   - bash -ex libs/travis-conda-scripts/scripts/build.sh
-
+after_success:
+  - codecov
 deploy:
   - provider: script
     skip_cleanup: true

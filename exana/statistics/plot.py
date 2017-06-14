@@ -20,6 +20,7 @@ def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=100,
               bins are overridden
     bins : number of bins, defaults to 100 if binsize is None
     ylabel : bool
+
     Returns
     -------
     out : axes

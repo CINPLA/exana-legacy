@@ -20,6 +20,14 @@ exana.misc.pretty_plotting module
     :undoc-members:
     :show-inheritance:
 
+exana.misc.signal_tools module
+------------------------------
+
+.. automodule:: exana.misc.signal_tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 exana.misc.tools module
 -----------------------
 
