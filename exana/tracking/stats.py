@@ -1,8 +1,3 @@
-"""
-Originally from https://github.com/MattNolanLab/gridcells
-LICENSE: GPLv3
-"""
-
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
@@ -10,8 +5,11 @@ import quantities as pq
 
 
 def _inf_rate(rate_map, px):
-    '''A helper function for information rate.
-    This function is copied from Lucas Solanka, Matt Nolans lab'''
+    '''
+    A helper function for information rate.
+
+    Originally from https://github.com/MattNolanLab/gridcells
+    '''
     tmp_rate_map = rate_map.copy()
     tmp_rate_map[np.isnan(tmp_rate_map)] = 0
     avg_rate = np.sum(np.ravel(tmp_rate_map * px))
@@ -20,10 +18,11 @@ def _inf_rate(rate_map, px):
 
 
 def sparsity(rate_map, px):
-    '''Compute sparsity of a rate map, The sparsity  measure is an adaptation
-    to space the adaptation measures the fraction of the environment  in which
+    '''
+    Compute sparsity of a rate map, The sparsity  measure is an adaptation
+    to space. The adaptation measures the fraction of the environment  in which
     a cell is  active. A sparsity of, 0.1 means that the place field of the
-    cell occupies 1/10 of the area the rat traverses [2]_
+    cell occupies 1/10 of the area the subject traverses [2]_
 
     Parameters
     ----------
@@ -49,7 +48,8 @@ def sparsity(rate_map, px):
 
 
 def selectivity(rate_map, px):
-    '''"The selectivity measure max(rate)/mean(rate)  of the cell. The more
+    '''
+    "The selectivity measure max(rate)/mean(rate)  of the cell. The more
     tightly concentrated  the cell's activity, the higher the selectivity.
     A cell with no spatial tuning at all will  have a  selectivity of 1" [2]_.
 
@@ -62,12 +62,6 @@ def selectivity(rate_map, px):
     -------
     out : float
         selectivity
-
-    References
-    ----------
-    .. [2] Skaggs, W. E., McNaughton, B. L., Wilson, M., & Barnes, C. (1996).
-       Theta phase precession in hippocampal neuronal populations and the
-       compression of temporal sequences. Hippocampus, 6, 149-172.
     '''
     tmp_rate_map = rate_map.copy()
     tmp_rate_map[np.isnan(tmp_rate_map)] = 0
@@ -77,7 +71,8 @@ def selectivity(rate_map, px):
 
 
 def information_rate(rate_map, px):
-    '''Compute information rate of a cell given variable x.
+    '''
+    Compute information rate of a cell given variable x.
     A simple algorithm devised by [1]_. This computes the spatial information
     rate of cell spikes given variable x (e.g. position, head direction) in
     bits/second. This function is copied from Lucas Solanka, Matt Nolans lab
@@ -95,6 +90,7 @@ def information_rate(rate_map, px):
     -------
     I : float
         Information rate.
+
     Notes
     -----
     Quote from [1]_:
@@ -112,6 +108,7 @@ def information_rate(rate_map, px):
     addition a small amount of background firing, the information would be
     slightly less than two bits. And so on.". Invalid positions are masked with
     ``np.nan`` and replaced with 0.
+
     References
     ----------
     .. [1] Skaggs, W.E. et al., 1993. An Information-Theoretic Approach to
@@ -122,10 +119,12 @@ def information_rate(rate_map, px):
 
 
 def information_specificity(rate_map, px):
-    '''Compute the 'specificity' of the cell firing rate to a variable X.
+    '''
+    Compute the 'specificity' of the cell firing rate to a variable X.
     Compute :func:`information_rate` for this cell and divide by the average
-    firing rate of the cell. See [1]_ for more information. This function is
-    copied from Lucas Solanka, Matt Nolans lab
+    firing rate of the cell. See [1]_ for more information.
+
+    Originally from https://github.com/MattNolanLab/gridcells
 
     Parameters
     ----------
@@ -139,19 +138,14 @@ def information_specificity(rate_map, px):
     -------
     I : float
         Information in bits/spike.
-
-    References
-    ----------
-    .. [1] Skaggs, W.E. et al., 1993. An Information-Theoretic Approach to
-       Deciphering the Hippocampal Code. In Advances in Neural Information
-       Processing Systems 5. pp. 1030-1037.
     '''
     I, avg_rate = _inf_rate(rate_map, px)
     return I / avg_rate
 
 
 def prob_dist(x, y, bins):
-    '''Calculate a probability distribution for animal positions in an arena.
+    '''
+    Calculate a probability distribution for animal positions in an arena.
 
     Parameters
     ----------

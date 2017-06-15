@@ -21,6 +21,7 @@ import os
 import re
 import exana
 import sys
+import matplotlib
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../exana'))
 sys.path.insert(0, os.path.abspath('../'))
@@ -45,6 +46,8 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'matplotlib.sphinxext.only_directives',
+    'matplotlib.sphinxext.plot_directive',
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.doctest',
