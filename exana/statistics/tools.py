@@ -185,8 +185,9 @@ def fano_factor_multiunit(unit_trials, bins=1, return_rates=False,
     ...     [homogeneous_poisson_process(
     ...          10 * pq.Hz, t_start=0.0 * pq.s, t_stop=1 * pq.s)
     ...      for _ in range(10)] for _ in range(100)]
-    >>> fano_factor_multiunit(units_trials)
-    ([0.91849103672074672], [0.041403689431354126])
+    >>> fano, std_err = fano_factor_multiunit(units_trials)
+    >>> print('{:.2}, {:.2}'.format(fano[0], std_err[0]))
+    0.92, 0.041
     '''
     from scipy.stats import linregress
     dim = 's'
@@ -242,8 +243,8 @@ def coeff_var(trials):
     --------
     >>> np.random.seed(12345)
     >>> trials = [np.arange(10), np.random.random((10))]
-    >>> coeff_var(trials)
-    [0.0, -9.533642434602724]
+    >>> print('{d[0]:.2f}, {d[1]:.2f}'.format(d=coeff_var(trials)))
+    0.00, -9.53
 
     """
     cvs = []
@@ -291,10 +292,10 @@ def bootstrap(data, num_samples=10000, statistic=None, alpha=0.05):
 
     To find the find mean 95% CI by 100 000 bootstrap samples
 
-    >>> ci = bootstrap(data=x, num_samples=100000, statistic=np.mean,
-    ...                alpha=0.05)
-    >>> ci
-    (4.6356845717187243, 5.1151196847494615)
+    >>> low, high = bootstrap(data=x, num_samples=100000, statistic=np.mean,
+    ...                       alpha=0.05)
+    >>> print('{:.2f}, {:.2f}'.format(low, high))
+    4.64, 5.12
 
     Historgram of the data with corresponding scatter with mean and it's CI
 
@@ -327,9 +328,10 @@ def bootstrap(data, num_samples=10000, statistic=None, alpha=0.05):
     For example, to find the 95% CI for the standard deviation, given
     :func:`np.std` as the statistic:
 
-    >>> bootstrap(data=x, num_samples=100000, statistic=np.std,
-    ...           alpha=0.05)
-    (1.974128537371612, 2.2640573675713305)
+    >>> low, high = bootstrap(data=x, num_samples=100000, statistic=np.std,
+    ...                       alpha=0.05)
+    >>> print('{:.2f}, {:.2f}'.format(low, high))
+    1.97, 2.26
     """
     data = np.asarray(data)
     if np.ndim(data) != 1:
