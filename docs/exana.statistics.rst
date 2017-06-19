@@ -4,14 +4,6 @@ exana.statistics package
 Submodules
 ----------
 
-exana.statistics.correlogram module
------------------------------------
-
-.. automodule:: exana.statistics.correlogram
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 exana.statistics.plot module
 ----------------------------
 

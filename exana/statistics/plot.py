@@ -85,7 +85,7 @@ def plot_autocorr(sptr, title='', color='k', edgecolor='k', ax=None, **kwargs):
            'corr_limit': 1.*pq.s}
     if kwargs:
         par.update(kwargs)
-    from .correlogram import correlogram
+    from .tools import correlogram
     if ax is None:
         fig, ax = plt.subplots()
     bin_width = par['corr_bin_width'].rescale('s').magnitude

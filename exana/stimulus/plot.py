@@ -6,7 +6,7 @@ from .tools import *
 from ..misc.plot import simpleaxis
 from ..statistics.plot import (plot_spike_histogram)
 from ..general.plot import (plot_raster)
-from ..statistics.tools import (fano_factor_linregress)
+from ..statistics.tools import (fano_factor_multiunit)
 
 
 def polar_tuning_curve(orients, rates, ax=None, params={}):
@@ -169,11 +169,12 @@ def plot_stimulus_overview(unit_trials, t_start, t_stop, binsize, title=None,
     t_start = t_start.rescale(dim)
     t_stop = t_stop.rescale(dim)
     binsize = binsize.rescale(dim)
-    bins, means, varis, fano, trials = fano_factor_linregress(unit_trials=unit_trials,
-                                                              t_start=t_start,
-                                                              t_stop=t_stop,
-                                                              binsize=binsize)
-    mean = np.mean(means, axis=0)
+    bins = np.arange(t_start, t_stop + binsize, binsize)
+    fano, ci, rates, bins = fano_factor_multiunit(unit_trials=unit_trials,
+                                                  bins=bins,
+                                                  return_rates=True,
+                                                  return_bins=True)
+    all_trials = [trial for trials in unit_trials for trial in trials]
     if axs is None:
         f = plt.figure()
         ax = f.add_subplot(3, 1, 1)
@@ -183,7 +184,7 @@ def plot_stimulus_overview(unit_trials, t_start, t_stop, binsize, title=None,
         ax, ax2, ax3 = axs
     if title is not None:
         ax.set_title(title)
-    ax.bar(bins[0:-1], mean/binsize, width=bins[1]-bins[0])
+    ax.bar(bins[0:-1], rates, width=bins[1]-bins[0])
     ax.set_xlim(t_start, t_stop)
     ax.set_ylabel('mean rate')
     ax.axvspan(0,0,color='r')
@@ -192,7 +193,7 @@ def plot_stimulus_overview(unit_trials, t_start, t_stop, binsize, title=None,
     ax.legend(handles=[line], bbox_to_anchor=(0., 1.02, 1., .102), loc=4,
                 ncol=2, borderaxespad=0.)
     simpleaxis(ax, bottom=False, ticks=False)
-    plot_raster(trials, ax=ax2)
+    plot_raster(all_trials, ax=ax2)
     ax2.axvspan(0,0, color='r')
     simpleaxis(ax2, bottom=False, ticks=False)
     ax3.bar(bins[0:-1], fano, width=bins[1]-bins[0])
