@@ -156,3 +156,94 @@ def prob_dist(x, y, bins):
 
     H, _, _ = np.histogram2d(x, y, bins=bins, normed=False)
     return (H / len(x)).T
+
+
+def occupancy_map(x, y, t,
+                  binsize=0.01*pq.m,
+                  box_xlen=1*pq.m,
+                  box_ylen=1*pq.m,
+                  mask_unvisited=True,
+                  convolve=True,
+                  return_bins=False,
+                  smoothing=0.02):
+    '''Divide a 2D space in bins of size binsize**2, count the time spent
+    in each bin. The map can  be convolved with a gaussian kernel of size
+    csize determined by the smoothing factor, binsize and box_xlen.
+
+    Parameters
+    ----------
+    x : quantities.Quantity array in m
+        1d vector of x positions
+    y : quantities.Quantity array in m
+        1d vector of y positions
+    t : quantities.Quantity array in s
+        1d vector of times at x, y positions
+    binsize : float
+        spatial binsize
+    box_xlen : quantities scalar in m
+        side length of quadratic box
+    mask_unvisited: bool
+        mask bins which has not been visited by nans
+    convolve : bool
+        convolve the rate map with a 2D Gaussian kernel
+
+    
+    Returns
+    -------
+    occupancy_map : numpy.ndarray
+    if return_bins = True
+    out : occupancy_map, xbins, ybins
+    '''
+
+    from exana.misc.tools import is_quantities
+    if not all([len(var) == len(var2) for var in [
+            x, y, t] for var2 in [x, y, t]]):
+        raise ValueError('x, y, t must have same number of elements')
+    if box_xlen < x.max() or box_ylen < y.max():
+        raise ValueError(
+            'box length must be larger or equal to max path length')
+    from decimal import Decimal as dec
+    decimals = 1e10
+    remainderx = dec(float(box_xlen)*decimals) % dec(float(binsize)*decimals)
+    remaindery = dec(float(box_ylen)*decimals) % dec(float(binsize)*decimals)
+    if remainderx != 0 or remaindery != 0:
+        raise ValueError('the remainder should be zero i.e. the ' +
+                         'box length should be an exact multiple ' +
+                         'of the binsize')
+    is_quantities([x, y, t], 'vector')
+    is_quantities(binsize, 'scalar')
+    t = t.rescale('s')
+    box_xlen = box_xlen.rescale('m').magnitude
+    box_ylen = box_ylen.rescale('m').magnitude
+    binsize = binsize.rescale('m').magnitude
+    x = x.rescale('m').magnitude
+    y = y.rescale('m').magnitude
+
+    # interpolate one extra timepoint
+    t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))]) * pq.s
+    time_in_bin = np.diff(t_.magnitude)
+    xbins = np.arange(0, box_xlen + binsize, binsize)
+    ybins = np.arange(0, box_ylen + binsize, binsize)
+    ix = np.digitize(x, xbins, right=True)
+    iy = np.digitize(y, ybins, right=True)
+    time_pos = np.zeros((xbins.size, ybins.size))
+    for n in range(len(x) - 1):
+        time_pos[ix[n], iy[n]] += time_in_bin[n]
+    # correct for shifting of map since digitize returns values at right edges
+    time_pos = time_pos[1:, 1:]
+    if convolve:
+        rate[np.isnan(rate)] = 0.  # for convolution
+        from astropy.convolution import Gaussian2DKernel, convolve_fft
+        csize = (box_xlen / binsize) * smoothing
+        kernel = Gaussian2DKernel(csize)
+        rate = convolve_fft(rate, kernel)  # TODO edge correction
+    if mask_unvisited:
+        was_in_bin = np.asarray(time_pos, dtype=bool)
+        rate[np.invert(was_in_bin)] = np.nan
+    if return_bins:
+        return rate.T, xbins, ybins
+    else:
+        return rate.T
+
+    H, _, _ = np.histogram2d(x, y, bins=bins, normed=False)
+    return (H / len(x)).T
