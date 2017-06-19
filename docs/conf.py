@@ -21,9 +21,10 @@ import os
 import re
 import exana
 import sys
+import matplotlib
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../exana'))
-# sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('../'))
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if not on_rtd:  # only import and set the theme if we're building docs locally
@@ -45,6 +46,8 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'matplotlib.sphinxext.only_directives',
+    'matplotlib.sphinxext.plot_directive',
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.doctest',
@@ -75,8 +78,10 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'exana'
-copyright = '2017, Svenn-Arne Dragly, Milad H. Mobarhan, Mikkel E. Lepperød'
-author = 'Svenn-Arne Dragly, Milad H. Mobarhan, Mikkel E. Lepperød'
+copyright = ('2017, Mikkel E. Lepperød, Milad H. Mobarhan, Alessio Buccino, ' +
+             'Tristan Stöber, Svenn-Arne Dragly')
+author = ('Mikkel E. Lepperød, Milad H. Mobarhan, Alessio Buccino, ' +
+          'Tristan Stöber, Svenn-Arne Dragly')
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -161,7 +166,8 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'exana.tex', 'exana Documentation',
-     'Svenn-Arne Dragly, Milad H. Mobarhan, Mikkel E. Lepperød', 'manual'),
+     'Mikkel E. Lepperød, Milad H. Mobarhan, Alessio Buccino, ' +
+     'Tristan Stöber, Svenn-Arne Dragly', 'manual'),
 ]
 
 

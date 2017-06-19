@@ -22,8 +22,36 @@ def simpleaxis(ax, left=True, right=True, top=True, bottom=True, ticks=True):
 
 
 def floating_axis(ax, origin=[0, 0], ending=[1, 1], xlabel=None, ylabel=None,
-                  lw=2, color='k', xhpadding=1, yhpadding=1.01,
-                  xvpadding=1.05, yvpadding=1.75):
+                  xhpadding=1, yhpadding=1.01, xvpadding=1.05, yvpadding=1.75,
+                  **kwargs):
+    """
+    Floating axis for axes scale.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axes return by matplotlib
+    origin : list
+        The origin [x, y] of your axis, relative to normalized axes i.e. between
+        zero and one.
+    ending : list
+        The length [x, y] of the axis arms relative to normalized axes i.e.
+        between zero and one.
+    xlabel : str
+        The label on the horizontal axis.
+    ylabel : str
+        The label on the vertical axis.
+    xhpadding : float
+        The amount of horizontal padding on the x label.
+    yhpadding : float
+        The amount of horizontal padding on the y label.
+    xvpadding : float
+        The amount of vertical padding on the x label.
+    xvpadding : float
+        The amount of vertical padding on the y label.
+    kwargs : dict
+        Keyword arguments set to matplotlib.axes.Axes.axhline/axvline.
+    """
     simpleaxis(ax, bottom=False, left=False, top=False, right=False,
                ticks=False)
 
@@ -32,9 +60,9 @@ def floating_axis(ax, origin=[0, 0], ending=[1, 1], xlabel=None, ylabel=None,
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
     ax.axhline(y=origin[1], xmin=trans(ending[0], xlim),
-               xmax=trans(origin[0], xlim), color=color, lw=lw)
+               xmax=trans(origin[0], xlim), **kwargs)
     ax.axvline(x=origin[0], ymin=trans(ending[1], ylim),
-               ymax=trans(origin[1], xlim), color=color, lw=lw)
+               ymax=trans(origin[1], xlim), **kwargs)
     if xlabel is None:
         xlabel = '{}'.format(abs(origin[0] - ending[0]))
     else:
@@ -48,6 +76,18 @@ def floating_axis(ax, origin=[0, 0], ending=[1, 1], xlabel=None, ylabel=None,
 
 
 def upper_legend(ax, label='', color='b'):
+    """
+    Legend on the top right side of your axes.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axes return by matplotlib.
+    label : str
+        Label text.
+    color : str
+        Color of line.
+    """
     import matplotlib.lines as mlines
     line = mlines.Line2D([], [], color=color, label=label)
     ax.legend(handles=[line],

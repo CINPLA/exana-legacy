@@ -4,11 +4,9 @@ Higher level object for computing, ploting and manipulating morlet scalogram.
 
 Originally from OpenElectrophy, with the following licence information:
 
-    OpenElectrophy is released under CeCill-B.
-
-    This licence is compatible BSD and compatible with the french copyright laws.
-
-    For short, you can use it and modify it as you want.
+OpenElectrophy is released under CeCill-B. This licence is compatible BSD and
+compatible with the french copyright laws. For short, you can use it and modify
+it as you want.
 """
 
 import numpy as np
@@ -40,9 +38,11 @@ def generate_wavelet_fourier(len_wavelet,
     """
     Compute the wavelet coefficients at all scales and makes its Fourier transform.
     When different signal scalograms are computed with the exact same coefficients,
-        this function can be executed only once and its result passed directly to compute_morlet_scalogram
+    this function can be executed only once and its result passed directly to
+    compute_morlet_scalogram
 
-    Output:
+    Returns
+    -------
         wf : Fourier transform of the wavelet coefficients (after weighting), Fourier frequencies are the first
     """
     # compute final map scales
@@ -122,47 +122,62 @@ def convolve_scalogram(ana, wf, sampling_rate, optimize_fft):
 
 class TimeFreq():
     """
-    *TimeFreq*
+    Time Frequency representation
 
-    Input:
+    Parameters
+    ----------
     ana: neo.AnalogSignal
-    f_start, f_stop, deltafreq : Frequency start stop and step at which the scalogram is computed.
-    samplingrate : time samplingrate of the scalogram if None sampling_rate = 4*f_stop
-    t_start, t_stop : optional time limit (in second)
-    f0 : central frequency of the Morlet wavelet.  The Fourier spectrum of
+    f_start, f_stop, deltafreq : quantities.Quantity
+        Frequency start stop and step at which the scalogram is computed.
+    samplingrate : quantities.Quantity
+        time samplingrate of the scalogram if None sampling_rate = 4*f_stop
+    t_start, t_stop : quantities.Quantity
+        optional time limit (in second)
+    f0 : quantities.Quantity
+        central frequency of the Morlet wavelet.  The Fourier spectrum of
         the Morlet wavelet appears as a Gaussian centered on f0.
         It is also used as the wavelet characteristic frequency.
         Low f0 favors time precision of the scalogram while high f0 favors frequency precision
-    normalisation : positive value favors low frequency components
-    optimize_fft : if True pad signal with 0. until next power of 2 before computing FFTs. In this case,
-    the sampling rate has to be recalculated (always in the more precise direction) to always keep power of 2 in FFt calculations
-
-    wf: pre computed wavelet coeef in furrier domain
+    normalisation : float
+        positive value favors low frequency components
+    optimize_fft : bool
+        if True pad signal with 0. until next power of 2 before computing FFTs. In this case,
+        the sampling rate has to be recalculated (always in the more precise
+        direction) to always keep power of 2 in FFt calculations
+    wf : array
+        pre computed wavelet coeef in furrier domain
         if it is not None (by default), it will ignore all other parameters and compute the map
         assuming wf is the Fourier transform of the wavelet_coefs
-    use_joblib: use joblib to cache wf
+    use_joblib: bool
+        use joblib to cache wf
 
-    Output:
-        self.map is  scalogram (dtype.complex)
-        self.freqs is vector frequency
-        self.times is vectors times
+    Returns
+    -------
+        self.map : dtype.complex
+            scalogram
+        self.freqs : array
+            vector frequency
+        self.times : array
+            vectors times
 
-    Note : this code is a simplification and correction of the full wavelet package (cwt.py)
-    orinally proposed by Sean Arms (http://github.com/lesserwhirls)
+    Note
+    ----
+    this code is a simplification and correction of the full wavelet package
+    (cwt.py) orinally proposed by Sean Arms (http://github.com/lesserwhirls)
 
     """
     def __init__(self, ana,
-            f_start=5. * pq.Hz,
-            f_stop=100.* pq.Hz,
-            deltafreq = 1.* pq.Hz,
-            sampling_rate = None,
-            t_start = None,
-            t_stop = None,
-            f0=2.5,
-            normalisation = 0.,
-            optimize_fft=False,
-            wf=None,
-            use_joblib = False):
+                 f_start=5. * pq.Hz,
+                 f_stop=100.* pq.Hz,
+                 deltafreq = 1.* pq.Hz,
+                 sampling_rate = None,
+                 t_start = None,
+                 t_stop = None,
+                 f0=2.5,
+                 normalisation = 0.,
+                 optimize_fft=False,
+                 wf=None,
+                 use_joblib = False):
 
         f_start = assume_quantity(f_start, units = 'Hz')
         f_stop = assume_quantity(f_stop, units = 'Hz')
@@ -216,14 +231,15 @@ class TimeFreq():
         self.t = self.times = self.ana.t_start + np.arange(self.map.shape[0]) / self.sampling_rate
 
     def mpl_plot(self, ax,
-                                    colorbar = True,
-                                    cax =None,
-                                    orientation='horizontal',
-                                    freq_axis='left',
-                                    clim = None,
-                                    **kargs):
+                 colorbar = True,
+                 cax =None,
+                 orientation='horizontal',
+                 freq_axis='left',
+                 clim = None,
+                 **kargs):
         """
-
+        Parameters
+        ----------
         ax : a matplotlib axes
         freq_axis : which axis to show the frequency
         """
@@ -234,10 +250,10 @@ class TimeFreq():
             im_map = abs(self.map)
             extent = (self.f_start-self.deltafreq/2., self.f_stop-self.deltafreq/2.,self.ana.t_start, self.ana.t_stop)
         im = ax.imshow(im_map,
-                                    interpolation='nearest',
-                                    extent=extent,
-                                    origin ='lower' ,
-                                    aspect = 'auto')
+                       interpolation='nearest',
+                        extent=extent,
+                        origin ='lower' ,
+                        aspect = 'auto')
         if clim is not None:
             im.set_clim(clim)
         if colorbar:
@@ -249,16 +265,3 @@ class TimeFreq():
 
         return im
     plot = mpl_plot
-
-
-
-
-def compute_morlet_scalogram(ana, **kargs):
-    """
-    Direct methods to comptude scalogram.
-    See TimeFreq for kargs.
-
-    Keep for old compatibility
-    """
-    tfr = TimeFreq(ana, **kargs)
-    return tfr.map

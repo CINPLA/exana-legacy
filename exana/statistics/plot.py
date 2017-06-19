@@ -20,6 +20,7 @@ def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=100,
               bins are overridden
     bins : number of bins, defaults to 100 if binsize is None
     ylabel : bool
+
     Returns
     -------
     out : axes
@@ -84,7 +85,7 @@ def plot_autocorr(sptr, title='', color='k', edgecolor='k', ax=None, **kwargs):
            'corr_limit': 1.*pq.s}
     if kwargs:
         par.update(kwargs)
-    from .correlogram import correlogram
+    from .tools import correlogram
     if ax is None:
         fig, ax = plt.subplots()
     bin_width = par['corr_bin_width'].rescale('s').magnitude
