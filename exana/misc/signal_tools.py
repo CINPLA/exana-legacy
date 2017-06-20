@@ -233,9 +233,7 @@ def extract_rising_edges(adc_signal, times, thresh=1.65):
     -------
     rising_times : np.array with rising times
     """
-    print('im here')
     idx_high = np.where(adc_signal>1.65)[0]
-
     rising = []
 
     if len(idx_high) != 0:
