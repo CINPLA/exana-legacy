@@ -618,3 +618,43 @@ def downsample_250(anas):
         else:
             out.append(ana)
     return out
+
+def find_frequency_range(anas, fs, freq_range, nchunks=30, chunksize=1*pq.s):
+    """Finds a peak in the spectrum withink defined frequency range.
+    Specta are computed on chunks of signals and averaged over channels.
+
+    Parameters
+    ----------
+    anas : np.array 
+           2d array of stimulation analog signals
+    fs : quantity
+         sampling frequency in Hz
+    freq_range: list/numpy array
+                freq boundaries to find peak in
+    nchunks: int
+             number of chunks used to compute spectra
+    chunksize: time Quantity 
+               length of chunks
+    
+    Returns
+    -------
+    fpeak : peak in Hz
+    """
+    from scipy import signal
+    samples_per_chunk = int(fs.rescale('Hz').magnitude*chunksize.rescale('s').magnitude)
+    random_intervals = np.random.randint(anas.shape[1]-samples_per_chunk, size=nchunks)
+    samples = []
+    for r in random_intervals:
+        samples = np.concatenate((samples, np.arange(r, r+samples_per_chunk, dtype=int))).astype(int)
+    print(type(samples[0]))
+    
+    anas_chunks = anas[:, samples]
+    fpre, Pxxpre = signal.welch(anas_chunks, fs, nperseg=1024)
+    avg_spectrum = np.mean(Pxxpre, axis=0)
+    fpeak = fpre[np.where((fpre>freq_range[0]) &
+                          (fpre<freq_range[1]))][np.argmax(avg_spectrum[np.where(
+                              (fpre>freq_range[0]) & 
+                              (fpre<freq_range[1]))])]
+
+    return fpeak
+                    
