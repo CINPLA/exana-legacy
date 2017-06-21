@@ -654,7 +654,7 @@ def find_frequency_range(anas, fs, freq_range, nchunks=30, chunksize=1*pq.s):
     fpeak = fpre[np.where((fpre>freq_range[0]) &
                           (fpre<freq_range[1]))][np.argmax(avg_spectrum[np.where(
                               (fpre>freq_range[0]) & 
-                              (fpre<freq_range[1]))])]
+                              (fpre<freq_range[1]))])]*pq.Hz
 
     return fpeak
                     
