@@ -147,7 +147,7 @@ def prob_dist(x, y, bins):
     '''
     Calculate a probability distribution for animal positions in an arena.
 
-    Parameters
+    Parametersp
     ----------
     x : quantities.Quantity array in m
     y : quantities.Quantity array in m
@@ -161,6 +161,26 @@ def prob_dist(x, y, bins):
     '''
 
     H, _, _ = np.histogram2d(x, y, bins=bins, normed=False)
+    return (H / len(x)).T
+
+
+def prob_dist_1d(x, bins):
+    '''
+    Calculate a probability distribution for animal positions in an arena.
+
+    Parametersp
+    ----------
+    x : quantities.Quantity array in m
+    bins : quantities.Quantity array in m
+
+    Returns
+    -------
+    dist : numpy.ndarray
+        Probability distribution for the positional data. The first dimension
+        is the y axis, the second dimension is the x axis.
+    '''
+
+    H, _ = np.histogram(x, bins=bins, normed=False)
     return (H / len(x)).T
 
 
