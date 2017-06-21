@@ -1,6 +1,7 @@
 import numpy as np
 import quantities as pq
 from ..misc.tools import is_quantities, normalize
+import pdb
 
 
 def _cut_to_same_len(*args):
@@ -229,3 +230,77 @@ def velocity_threshold(x, y, t, threshold):
     y[speed_lim] = np.nan * y.units
     x, y, t = rm_nans(x, y, t)
     return x, y, t
+
+
+def unit_vector(v):
+    """ Return unit vector of v
+    modified from David Wolever,
+    https://stackoverflow.com/questions/2827393/angles
+    -between-two-n-dimensional-vectors-in-python
+    """
+    return v / np.linalg.norm(v)
+
+
+def angle_between_vectors(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'
+    modified from David Wolever,
+    https://stackoverflow.com/questions/2827393/angles
+    -between-two-n-dimensional-vectors-in-python
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+
+def rescale_linear_track_2d_to_1d(x, y, end_0=[], end_1=[]):
+    """ Take x, y coordinates of linear track data, rescale to 1-d.
+    
+    Parameters
+    ----------
+    x : quantities.Quantity array in m
+        1d vector of x positions
+    y : quantities.Quantity array in m
+        1d vector of x positions
+    t : quantities.Quantity array in s
+        1d vector of times at x, y positions
+    end_0: quantities.Quantity array in m
+        linear track endpoint 1, in x, y
+    end_1: quantities.Quantity array in m
+        linear track endpoint 2, in x, y
+
+    Returns
+    -------
+    out : 1d vector
+    """
+    from exana.misc.tools import is_quantities
+    if not all([len(var) == len(var2) for var in
+                [x, y] for var2 in [x, y]]):
+        raise ValueError('x, y, t must have same number of elements')
+    is_quantities([x, y], 'vector')
+    x = x.rescale('m').magnitude
+    y = y.rescale('m').magnitude
+    if len(end_0) != 2 or len(end_1) != 2:
+        raise ValueError('end_0 and end_1 must be 2d vectors')
+    end_0 = end_0.rescale('m').magnitude
+    end_1 = end_1.rescale('m').magnitude
+    # shift coordinate system to have end_0 as origin
+    x -= end_0[0]
+    y -= end_0[1]
+
+    # calculate angle of track
+    v_x_axis = np.array([1, 0])
+    theta = angle_between_vectors(end_1-end_0, v_x_axis)
+    # rotate clockwise
+    rot_mat = np.array([[np.cos(-theta), -np.sin(-theta)],
+                        [np.sin(-theta),  np.cos(-theta)]])
+    x_rot = []
+    for x_i, y_i in zip(x, y):
+        [x_rot_i, _] = np.dot(rot_mat,
+                              np.array([[x_i],
+                                        [y_i]]))
+        x_rot.append(x_rot_i.item())
+    # only consider x_rot in output
+    return x_rot*pq.m
+
+
+

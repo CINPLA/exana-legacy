@@ -311,3 +311,87 @@ def nvisits_map(x, y, t,
         return nvisits_map.T, xbins, ybins
     else:
         return nvisits_map.T
+
+
+def spatial_rate_map_1d(x, t, sptr,
+                        binsize=0.01*pq.m,
+                        track_len=1*pq.m,
+                        mask_unvisited=True,
+                        convolve=True,
+                        return_bins=False,
+                        smoothing=0.02):
+    """Take x coordinates of linear track data, divide in bins of binsize,
+    count the number of spikes  in each bin and  divide by the time spent in
+    respective bins. The map can then be convolved with a gaussian kernel of
+    size csize determined by the smoothing factor, binsize and box_xlen.
+
+    Parameters
+    ----------
+    sptr : neo.SpikeTrain
+    x : quantities.Quantity array in m
+        1d vector of x positions
+    t : quantities.Quantity array in s
+        1d vector of times at x, y positions
+    binsize : float
+        spatial binsize
+    box_xlen : quantities scalar in m
+        side length of quadratic box
+    mask_unvisited: bool
+        mask bins which has not been visited by nans
+    convolve : bool
+        convolve the rate map with a 2D Gaussian kernel
+
+    Returns
+    -------
+    out : rate map
+    if return_bins = True
+    out : rate map, xbins
+    """
+    from exana.misc.tools import is_quantities
+    if not all([len(var) == len(var2) for var in [x, t] for var2 in [x, t]]):
+        raise ValueError('x, t must have same number of elements')
+    if track_len < x.max():
+        raise ValueError('track length must be\
+        larger or equal to max path length')
+    from decimal import Decimal as dec
+    decimals = 1e10
+    remainderx = dec(float(track_len)*decimals) % dec(float(binsize)*decimals)
+    if remainderx != 0:
+        raise ValueError('the remainder should be zero i.e. the ' +
+                         'box length should be an exact multiple ' +
+                         'of the binsize')
+    is_quantities([x, t], 'vector')
+    is_quantities(binsize, 'scalar')
+    t = t.rescale('s')
+    track_len = track_len.rescale('m').magnitude
+    binsize = binsize.rescale('m').magnitude
+    x = x.rescale('m').magnitude
+    # interpolate one extra timepoint
+    t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))]) * pq.s
+    spikes_in_bin, _ = np.histogram(sptr.times, t_)
+    time_in_bin = np.diff(t_.magnitude)
+    xbins = np.arange(0, track_len + binsize, binsize)
+    ix = np.digitize(x, xbins, right=True)
+    spike_pos = np.zeros(xbins.size)
+    time_pos = np.zeros(xbins.size)
+    for n in range(len(x)):
+        spike_pos[ix[n]] += spikes_in_bin[n]
+        time_pos[ix[n]] += time_in_bin[n]
+    # correct for shifting of map since digitize returns values at right edges
+    spike_pos = spike_pos[1:]
+    time_pos = time_pos[1:]
+    with np.errstate(divide='ignore', invalid='ignore'):
+        rate = np.divide(spike_pos, time_pos)
+    if convolve:
+        rate[np.isnan(rate)] = 0.  # for convolution
+        from astropy.convolution import Gaussian2DKernel, convolve_fft
+        csize = (track_len / binsize) * smoothing
+        kernel = Gaussian2DKernel(csize)
+        rate = convolve_fft(rate, kernel)  # TODO edge correction
+    if mask_unvisited:
+        was_in_bin = np.asarray(time_pos, dtype=bool)
+        rate[np.invert(was_in_bin)] = np.nan
+    if return_bins:
+        return rate.T, xbins
+    else:
+        return rate.T
