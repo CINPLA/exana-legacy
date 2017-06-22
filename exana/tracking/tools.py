@@ -40,9 +40,9 @@ def get_raw_position(spot_group):
             1d vectors with position and time from LED
         """
         coords = spot_group["data"]
-        t = spot_group["timestamps"].data
-        x = coords[:, 0]
-        y = coords[:, 1]
+        t = spot_group["timestamps"].data.magnitude
+        x = coords[:, 0].magnitude
+        y = coords[:, 1].magnitude
         if not monotonously_increasing(t):
             import warnings
             warnings.warn('Time is not monotonously increasing, ' +
