@@ -213,7 +213,8 @@ def plot_ratemaps_linear_track(x, t, sptrs,
                                mask_unvisited=True,
                                convolve=True,
                                origin='upper',
-                               cmap='jet'):
+                               cmap='jet',
+                               return_bins=False):
     """
     Plot ratemaps along one dimension for multiple neurons
 
@@ -240,13 +241,13 @@ def plot_ratemaps_linear_track(x, t, sptrs,
     unit_names = []
     for sptr in sptrs:
         # compute rate maps
-        rate_map = spatial_rate_map_1d(x, t, sptr,
-                                       binsize=binsize,
-                                       track_len=track_len,
-                                       mask_unvisited=True,
-                                       convolve=False,
-                                       return_bins=False,
-                                       smoothing=0.02)
+        rate_map, bins = spatial_rate_map_1d(x, t, sptr,
+                                             binsize=binsize,
+                                             track_len=track_len,
+                                             mask_unvisited=True,
+                                             convolve=False,
+                                             return_bins=True,
+                                             smoothing=0.02)
         rate_maps.append(rate_map)
         # calc center of mass
         com = center_of_mass(rate_map)[0]
@@ -258,6 +259,7 @@ def plot_ratemaps_linear_track(x, t, sptrs,
     com_ordering = np.argsort(coms)
 
     fig = plt.figure(figsize=(1*n_sptr, 8))
+    fig.suptitle('Spatial rate maps on linear track')
     gs = gridspec.GridSpec(n_sptr, 1)
     gs.update(hspace=0.0)
 
@@ -269,12 +271,29 @@ def plot_ratemaps_linear_track(x, t, sptrs,
                        origin=origin,
                        vmin=vmin,
                        vmax=vmax,
+                       extent=(0, track_len.rescale('m').magnitude,
+                               0, 1/n_sptr*2),
                        cmap=cmap)
-        plt.axis('off')
+        ax.set_ylabel(str(unit_names[i_ord]))
+        ax.set_yticks([])
+        ax.set_yticklabels([])
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        if i+1 < len(com_ordering):
+            ax.set_xticks([])
+            ax.set_xticklabels([])
+            ax.spines['bottom'].set_visible(False)
+        if i+1 == len(com_ordering):
+            ax.set_xticklabels
+            ax.set_xlabel('x [' + str(x.units) + ']')
+
     fig.subplots_adjust(right=0.9)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     fig.colorbar(im, cax=cbar_ax)
-    plt.show()
-    # TODO: y labels, unit name, x ticks, track
-
+    if return_bins:
+        return fig, bins
+    else:
+        return fig
+    # Todo: Empty bin on left
 
