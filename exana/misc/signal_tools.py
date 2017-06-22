@@ -247,7 +247,7 @@ def extract_rising_edges(adc_signal, times, thresh=1.65):
 
     return rising_times
 
-def filter_analog_signals(anas, freq, fs, filter_type='bandpass', order=3):
+def filter_analog_signals(anas, freq, fs, filter_type='bandpass', order=3, copy_signal=False):
     """Filters analog signals with zero-phase Butterworth filter.
     The function raises an Exception if the required filter is not stable.
 
@@ -263,6 +263,10 @@ def filter_analog_signals(anas, freq, fs, filter_type='bandpass', order=3):
                   'lowpass', 'highpass', 'bandpass', 'bandstop'
     order : int
             filter order
+    parallel : bool
+               parallel or not
+    nprocesses : int
+                 if parallel, number of processes
 
     Returns
     -------
@@ -276,7 +280,6 @@ def filter_analog_signals(anas, freq, fs, filter_type='bandpass', order=3):
 
     if np.all(np.abs(np.roots(a)) < 1) and np.all(np.abs(np.roots(a)) < 1):
         print('Filtering signals with ', filter_type, ' filter at ' , freq ,'...')
-        anas_filt = []
         if len(anas.shape) == 2:
             anas_filt = filtfilt(b, a, anas, axis=1)
         elif len(anas.shape) == 1:
@@ -308,7 +311,7 @@ def ground_bad_channels(anas, bad_channels, copy_signal=True):
     if copy_signal:
         anas_zeros = copy(anas)
     else:
-        anas_zero = anas
+        anas_zeros = anas
     if type(bad_channels) is not list:
         bad_channels = [bad_channels]
 
@@ -646,15 +649,13 @@ def find_frequency_range(anas, fs, freq_range, nchunks=30, chunksize=1*pq.s):
     samples = []
     for r in random_intervals:
         samples = np.concatenate((samples, np.arange(r, r+samples_per_chunk, dtype=int))).astype(int)
-    print(type(samples[0]))
-    
     anas_chunks = anas[:, samples]
     fpre, Pxxpre = signal.welch(anas_chunks, fs, nperseg=1024)
     avg_spectrum = np.mean(Pxxpre, axis=0)
     fpeak = fpre[np.where((fpre>freq_range[0]) &
                           (fpre<freq_range[1]))][np.argmax(avg_spectrum[np.where(
                               (fpre>freq_range[0]) & 
-                              (fpre<freq_range[1]))])]*pq.Hz
+                              (fpre<freq_range[1]))])]
 
-    return fpeak
-                    
+    return int(fpeak)*pq.Hz
+
