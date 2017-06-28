@@ -1,4 +1,5 @@
 import numpy as np
+import neo
 import quantities as pq
 from ..misc.tools import find_first_peak, is_quantities
 
