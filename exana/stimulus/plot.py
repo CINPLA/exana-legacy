@@ -97,8 +97,8 @@ def orient_raster_plots(trials):
     return fig
 
 
-def plot_psth(epo=None, t_start=None, t_stop=None, trials=None, unit=None,
-              sptr=None, output='counts', binsize=None, bins=100, fig=None,
+def plot_psth(sptr=None, epoch=None, t_start=None, t_stop=None, trials=None,
+              output='counts', binsize=None, bins=100, fig=None,
               color='b', title='plot_psth', stim_color='b', edgecolor='k',
               alpha=.2, label='stim on', legend_loc=1, legend_style='patch',
               axs=None, hist_ylabel=True, rast_ylabel='trials', dim='s',
@@ -108,7 +108,6 @@ def plot_psth(epo=None, t_start=None, t_stop=None, trials=None, unit=None,
 
     Parameters
     ----------
-    unit : one or several entire spiketrains
     sptr : neo.SpikeTrain
     trials : list of cut neo.SpikeTrains with same number of recording channels
     color : color of spikes
@@ -131,10 +130,10 @@ def plot_psth(epo=None, t_start=None, t_stop=None, trials=None, unit=None,
         assert len(axs) == 2
         ax, ax2 = axs
     if trials is None:
-        assert unit is not None or sptr is not None
-        assert epo is not None and t_start is not None and t_stop is not None
-        trials = make_spiketrain_trials(epo=epo, t_start=t_start, t_stop=t_stop,
-                                        unit=unit, sptr=sptr)
+        assert sptr is not None
+        assert epoch is not None and t_start is not None and t_stop is not None
+        trials = make_spiketrain_trials(epoch=epoch, t_start=t_start, t_stop=t_stop,
+                                        spike_train=sptr)
     plot_spike_histogram(trials, color=color, ax=ax, output=output,
                          binsize=binsize, bins=bins, edgecolor=edgecolor,
                          ylabel=hist_ylabel, dim=dim)
@@ -142,7 +141,7 @@ def plot_psth(epo=None, t_start=None, t_stop=None, trials=None, unit=None,
         ax.set_ylim(ylim)
     plot_raster(trials, color=color, ax=ax2, ylabel=rast_ylabel, dim=dim)
     if legend_style == 'patch':
-        stim_stop = epo.durations.rescale(dim).magnitude.mean()
+        stim_stop = epoch.durations.rescale(dim).magnitude.mean()
         import matplotlib.patches as mpatches
         line = mpatches.Patch([], [], color=stim_color, label=label, alpha=alpha)
     elif legend_style == 'line':
