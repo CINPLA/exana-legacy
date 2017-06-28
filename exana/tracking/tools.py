@@ -26,6 +26,14 @@ def remove_eqal_times(time, *args):
     return np.delete(time, idxs+1), out
 
 
+def remove_smaller_times(time, *args):
+    idxs, = np.where([x > y for x, y in zip(time , time[1:])])
+    out = []
+    for arg in args:
+        out.append(np.delete(arg, idxs+1))
+    return np.delete(time, idxs+1), out
+
+
 def get_raw_position(spot_group):
         """
         Get postion data from exdir led group
@@ -46,8 +54,11 @@ def get_raw_position(spot_group):
         if not monotonously_increasing(t):
             import warnings
             warnings.warn('Time is not monotonously increasing, ' +
-                          'removing equal timestamps.')
+                          'removing equal and smaller timestamps.')
             t, (x, y) = remove_eqal_times(t, x, y)
+            t, (x, y) = remove_smaller_times(t, x, y)
+            if not monotonously_increasing(t):
+                raise ValueError('Unable to fix timestamps please revise them.')
         t = pq.Quantity(t, spot_group["timestamps"].attrs['unit'])
         x = pq.Quantity(x, coords.attrs['unit'])
         y = pq.Quantity(y, coords.attrs['unit'])

@@ -31,6 +31,38 @@ def test_remove_eqal_times():
     assert np.array_equal(y_, y)
 
 
+def test_remove_smaller_times():
+    from exana.tracking.tools import remove_smaller_times
+    t = np.arange(11)
+    t[4] = t[2]
+    t[6] = t[4]
+    t[8] = t[2]
+    t[10] = t[3]
+    x = np.arange(11)
+    y = np.arange(11, 22)
+    t_, (x_, y_) = remove_smaller_times(t, x, y)
+    t = np.delete(t, [4, 6, 8, 10])
+    x = np.delete(x, [4, 6, 8, 10])
+    y = np.delete(y, [4, 6, 8, 10])
+    assert np.array_equal(t_, t)
+    assert np.array_equal(x_, x)
+    assert np.array_equal(y_, y)
+
+
+def test_remove_smaller_times1():
+    from exana.tracking.tools import remove_smaller_times
+    t = [1,2,3,2,4]
+    x = [1,2,3,2,4]
+    y = [5,6,7,8,9]
+    t, (x, y) = remove_smaller_times(t, x, y)
+    t_ = [1,2,3,4]
+    x_ = [1,2,3,4]
+    y_ = [5,6,7,9]
+    assert np.array_equal(t_, t)
+    assert np.array_equal(x_, x)
+    assert np.array_equal(y_, y)
+
+
 def test_monotonously_increasing():
     from exana.tracking.tools import monotonously_increasing
     t = np.arange(12)
@@ -190,7 +222,7 @@ def test_occupancy_map():
     y = np.linspace(0+binsize.magnitude/2.,
                     box_ylen.magnitude-binsize.magnitude/2, N) * pq.m
     t = np.linspace(0, 10., N) * pq.s
-    
+
     occmap, xbins, ybins = occupancy_map(x, y, t,
                                          binsize=binsize,
                                          box_xlen=box_xlen,
