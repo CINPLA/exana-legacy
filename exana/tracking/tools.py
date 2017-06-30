@@ -34,7 +34,7 @@ def remove_smaller_times(time, *args):
     return np.delete(time, idxs+1), out
 
 
-def get_processed_position(exdir_path):
+def get_processed_tracking(exdir_path):
     """
     Get postion data from exdir position group
 
