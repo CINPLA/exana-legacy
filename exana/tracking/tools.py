@@ -34,6 +34,34 @@ def remove_smaller_times(time, *args):
     return np.delete(time, idxs+1), out
 
 
+def get_processed_position(exdir_path):
+    """
+    Get postion data from exdir position group
+
+    Parameters
+    ----------
+    exdir_path : str
+        Path to exdir file.
+
+    Returns
+    ----------
+    out : tuple
+        Positions and head direction(x, y, t, ang, ang_t)
+    """
+    import exdir
+    exdir_group = exdir.File(exdir_path)
+    position_group = exdir_group['processing']['tracking']['camera_0']['Position']
+    x1, y1, t1 = tr.get_raw_position(position_group['led_0'])
+    x2, y2, t2 = tr.get_raw_position(position_group['led_1'])
+    x1, y1, t1 = fix_not_monotonous_timestamps(x1, y1, t1)
+    x2, y2, t2 = fix_not_monotonous_timestamps(x2, y2, t2)
+    x, y, t = tr.select_best_position(x1, y1, t1, x2, y2, t2)
+    ang, ang_t = tr.head_direction(x1, y1, x2, y2, t1,
+                                             return_rad=False)
+    x, y, t = tr.interp_filt_position(x, y, t, pos_fs=par['pos_fs'], f_cut=par['f_cut'])
+    return x, y, t, ang, ang_t
+
+
 def get_raw_position(spot_group):
         """
         Get postion data from exdir led group
@@ -48,22 +76,30 @@ def get_raw_position(spot_group):
             1d vectors with position and time from LED
         """
         coords = spot_group["data"]
-        t = spot_group["timestamps"].data.magnitude
-        x = coords[:, 0].magnitude
-        y = coords[:, 1].magnitude
-        if not monotonously_increasing(t):
-            import warnings
-            warnings.warn('Time is not monotonously increasing, ' +
-                          'removing equal and smaller timestamps.')
-            t, (x, y) = remove_eqal_times(t, x, y)
-            t, (x, y) = remove_smaller_times(t, x, y)
-            if not monotonously_increasing(t):
-                raise ValueError('Unable to fix timestamps please revise them.')
-        t = pq.Quantity(t, spot_group["timestamps"].attrs['unit'])
-        x = pq.Quantity(x, coords.attrs['unit'])
-        y = pq.Quantity(y, coords.attrs['unit'])
+        t = spot_group["timestamps"].data
+        x = coords[:, 0]
+        y = coords[:, 1]
 
         return x, y, t
+
+
+def fix_not_monotonous_timestamps(x, y, t):
+    if not monotonously_increasing(t):
+        t_unit = t.units
+        x_unit = x.units
+        y_unit = y.units
+        import warnings
+        warnings.warn('Time is not monotonously increasing, ' +
+                      'removing equal and smaller timestamps.')
+        t, (x, y) = remove_eqal_times(t, x, y)
+        if min(t) != t[0]:
+            idx = np.where(t == min(t))
+            t = t[idx:]
+            x = x[idx:]
+            y = y[idx:]
+        if not monotonously_increasing(t):
+            raise ValueError('Unable to fix timestamps please revise them.')
+    return x * x_unit, y * y_unit, t * t_unit
 
 
 def get_tracking(postion_group):
