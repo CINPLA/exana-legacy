@@ -102,7 +102,7 @@ def plot_psth(sptr=None, epoch=None, t_start=None, t_stop=None, trials=None,
               color='b', title='plot_psth', stim_color='b', edgecolor='k',
               alpha=.2, label='stim on', legend_loc=1, legend_style='patch',
               axs=None, hist_ylabel=True, rast_ylabel='trials', dim='s',
-              ylim=None):
+              ylim=None, offset=0 * pq.s):
     """
     Visualize clustering on amplitude at detection point
 
@@ -134,6 +134,18 @@ def plot_psth(sptr=None, epoch=None, t_start=None, t_stop=None, trials=None,
         assert epoch is not None and t_start is not None and t_stop is not None
         trials = make_spiketrain_trials(epoch=epoch, t_start=t_start, t_stop=t_stop,
                                         spike_train=sptr)
+        stim_duration = epoch.durations.rescale(dim).magnitude.max()
+    else:
+        if legend_style == 'patch':
+            if epoch is not None:
+                stim_duration = epoch.durations.rescale(dim).magnitude.max()
+            else:
+                import warnings
+                warnings.warn('Unable to acquire stimulus duration, setting ' +
+                              'legend_style to "line". Please provede "epoch"' +
+                              ' in order to use legend_style "patch".')
+                legend_style = 'line'
+
     plot_spike_histogram(trials, color=color, ax=ax, output=output,
                          binsize=binsize, bins=bins, edgecolor=edgecolor,
                          ylabel=hist_ylabel, dim=dim)
@@ -141,15 +153,16 @@ def plot_psth(sptr=None, epoch=None, t_start=None, t_stop=None, trials=None,
         ax.set_ylim(ylim)
     plot_raster(trials, color=color, ax=ax2, ylabel=rast_ylabel, dim=dim)
     if legend_style == 'patch':
-        stim_stop = epoch.durations.rescale(dim).magnitude.mean()
+        fill_stop = stim_duration
         import matplotlib.patches as mpatches
         line = mpatches.Patch([], [], color=stim_color, label=label, alpha=alpha)
     elif legend_style == 'line':
-        stim_stop = 0
+        fill_stop = 0
         import matplotlib.lines as mlines
         line = mlines.Line2D([], [], color=stim_color, label=label)
-    ax.axvspan(0, stim_stop, color=stim_color, alpha=alpha)
-    ax2.axvspan(0, stim_stop, color=stim_color, alpha=alpha)
+    offset = offset.rescale('s').magnitude
+    ax.axvspan(offset, fill_stop + offset, color=stim_color, alpha=alpha)
+    ax2.axvspan(offset, fill_stop + offset, color=stim_color, alpha=alpha)
     if legend_loc == 'outside':
         ax.legend(handles=[line], bbox_to_anchor=(0., 1.02, 1., .102), loc=4,
                   ncol=2, borderaxespad=0.)
