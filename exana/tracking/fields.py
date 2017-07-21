@@ -398,7 +398,7 @@ def spatial_rate_map_1d(x, t, sptr,
         return rate.T
 
 
-def calculate_grid_geometry(rate_map, plot_fields=False):
+def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
     """Calculates quantitative information about grid field.
     Find bump centers, bump spacing, center diplacement and hexagon
     orientation
@@ -422,6 +422,20 @@ def calculate_grid_geometry(rate_map, plot_fields=False):
     orientation : float
                   orientation of hexagon (in degrees)
 
+
+    Other parameters
+    ----------------
+    thrsh : float, default 0
+            see find_avg_dist()
+
+    center_method : string, valid options: ['maxima', 'center_of_mass']
+            default: 'center_of_mass'
+            see separate_fields()
+
+    method : string, valid options: ['closest', 'best']
+            see fit_hex()
+
+
     Examples
     --------
 
@@ -433,29 +447,48 @@ def calculate_grid_geometry(rate_map, plot_fields=False):
     # smooth_rate_map = lambda x:x
     # rate_map = smooth_rate_map(rate_map)
 
+    center_method = kwargs.pop('center_method',None)
+    if center_method:
+        fields, nfields, bump_centers = separate_fields(rate_map,
+                                        center_method=center_method)
+    else:
+        fields, nfields, bump_centers = separate_fields(rate_map)
 
-    fields, nfields = separate_fields(rate_map)
-    # indices starts at 1
-    indices = range(1,nfields+1)
-
-    bump_centers = center_of_mass(rate_map, labels=fields, index=indices)
+    if bump_centers.size == 0:
+        import warnings
+        msg = 'couldnt find bump centers, returning None'
+        warnings.warn(msg, RuntimeWarning, stacklevel=2)
+        return None,None,None,None,
+              
+    sh = np.array(rate_map.shape)
 
     if plot_fields:
         import matplotlib.pyplot as plt
+        x=np.linspace(0,1,sh[0])
+        y=np.linspace(0,1,sh[1])
+        x,y = np.meshgrid(x,y)
         ax = plt.gca()
+        plt.pcolormesh(x,y, fields)
         plt.axis([0,1,0,1])
-        plt.pcolormesh(fields)
 
-    # normalize to (0,1)
-    bump_centers = (np.array(bump_centers)/rate_map.shape)[:,::-1]
+    # normalize to (0,1) and switch from row-column to x-y
+    bump_centers = (np.array(bump_centers)/(sh-1))[:,::-1]
 
-    avg_dist = find_avg_dist(rate_map)
 
-    displacement, orientation = fit_hex(bump_centers, avg_dist, plot_bumps=plot_fields)
+
+    thrsh = kwargs.pop('thrsh', None)
+    if thrsh:
+        avg_dist = find_avg_dist(rate_map, thrsh)
+    else:
+        avg_dist = find_avg_dist(rate_map)
+
+    displacement, orientation = fit_hex(bump_centers, avg_dist,
+            plot_bumps=plot_fields, **kwargs)
+
     return bump_centers, avg_dist, displacement, orientation
 
 
-def separate_fields(rate_map, thrsh = 0):
+def separate_fields(rate_map, thrsh = 0, center_method = 'maxima'):
     """Separates fields using the laplacian to identify fields separated by
     a negative second derivative.
 
@@ -467,6 +500,9 @@ def separate_fields(rate_map, thrsh = 0):
         upper cutoff of laplacian to separate fields by. Should be <= 0.
         (positive laplacian corresponds to dip in rate_map). Default 0.
 
+    center_method : string. valid options = ['center_of_mass', 'maxima']
+        method to find field centers.
+
     Returns
     -------
     fields : numpy array, shape like rate_map.
@@ -476,7 +512,13 @@ def separate_fields(rate_map, thrsh = 0):
 
     n_field : int
         field count
+
+    bump_centers : 
     """
+    if center_method not in ['maxima','center_of_mass']:
+        msg = "invalid center_method flag '%s'" % center_method
+        raise ValueError(msg)
+
     from scipy.ndimage import laplace, label
 
     l = laplace(rate_map)
@@ -485,29 +527,53 @@ def separate_fields(rate_map, thrsh = 0):
     # Labels areas of the laplacian not connected by values > 0.
     fields, n_fields = label(l)
 
-    return fields, n_fields
+    indices = range(1,n_fields+1)
+
+    if center_method == 'maxima':
+        from scipy.ndimage import maximum_position
+        bump_centers = maximum_position(rate_map, labels=fields, index=indices)
+    if center_method == 'center_of_mass':
+        from scipy.ndimage import center_of_mass
+        bump_centers = center_of_mass(rate_map, labels=fields, index=indices)
+
+    return fields, n_fields, np.array(bump_centers)
 
 
 def find_avg_dist(rate_map, thrsh = 0):
     """Uses autocorrelation and separate_fields to find average distance
-    between bumps. """
+    between bumps. 
+    
+    Parameters
+    ----------
+    rate_map : np 2d array
+               firing rate in each bin
+    
+    thrsh (optional) : float, default 0
+            cutoff value for the laplacian, should be a negative
+            number. Helps if bumps are connected by "bridges" or
+            saddles where the laplacian is negative (should only
+            be negative at individual bumps)
+        """
 
-    from scipy.ndimage import center_of_mass
+    from scipy.ndimage import maximum_position
     from exana.misc.tools import fftcorrelate2d
 
-    # autocorrelate. Returns array (2x - 1) the size
-    acorr = fftcorrelate2d(rate_map,rate_map)#, mode = 'full', normalize = True)
+    # autocorrelate. Returns array (2x - 1) the size of rate_map
+    acorr = fftcorrelate2d(rate_map,rate_map, mode = 'full', normalize = True)
 
-    #acorr[acorr<0] = 0
-    f, nf = separate_fields(acorr,thrsh=thrsh) # TODO Find a valid value for thrsh, or 
-                                               # remove. This is a big problem
+    #acorr[acorr<0] = 0 TODO Fix this
+    f, nf, bump_centers = separate_fields(acorr,thrsh=thrsh, center_method='maxima') 
+                                         # TODO Find a way to find valid value for 
+                                         # thrsh, or remove. 
+                                         # TODO This is a big problem TODO 
 
-    # index starts at 1!
-    fpos = center_of_mass(acorr, labels=f, index=range(1,nf+1))
-    fpos = np.array(fpos)
 
+    bump_centers = np.array(bump_centers)
+
+    sh = np.array(rate_map.shape)
     # find dists from center in (rate_map-)relative units (from 0 to 2)
-    distances = np.linalg.norm(fpos/rate_map.shape - (1,1), axis = 1)
+    distances = np.linalg.norm(bump_centers/(sh-1) - (1,1), axis = 1)
+
     dist_sort = np.argsort(distances)
     distances = distances[dist_sort]
 
@@ -548,8 +614,8 @@ def fit_hex(bump_centers, avg_dist=None, plot_bumps = False, method='best'):
 
     valid_methods = ['closest', 'best']
     if method not in valid_methods:
-        msg = "Acceptable method flags are 'closest' or 'best'"
-        raise(ValueError, msg)
+        msg = "invalid method flag '%s'" % method
+        raise ValueError(msg)
     bump_centers = np.array(bump_centers)
 
     # sort by distance to center
@@ -588,7 +654,6 @@ def fit_hex(bump_centers, avg_dist=None, plot_bumps = False, method='best'):
     # sort by angle
     a = np.arctan2(relpos[:,1], relpos[:,0])%(2*np.pi)
     a_sort = np.argsort(a)
-    print (relpos)
 
     # extract lowest angle and convert to degrees
     orientation = a[a_sort][0] *180/np.pi
@@ -599,7 +664,6 @@ def fit_hex(bump_centers, avg_dist=None, plot_bumps = False, method='best'):
         i = 1
         xmin, xmax = ax.get_xlim()
         ymin, ymax = ax.get_ylim()
-        print(xmin,xmax,ymin,ymax)
         dx = xmax-xmin; dy = ymax - ymin
 
         closest = closest[a_sort]
