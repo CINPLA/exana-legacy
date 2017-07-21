@@ -4,6 +4,27 @@ import neo
 from exana.misc.tools import is_quantities
 
 
+def baysian_latency(count_data):
+    import pymc3 as pm
+    import theano.tensor as tt
+    n_count_data = len(count_data)
+    with pm.Model() as model:
+        alpha = 1.0/count_data.mean()  # Recall count_data is the
+                                       # variable that holds our txt counts
+        lambda_1 = pm.Exponential("lambda_1", alpha)
+        lambda_2 = pm.Exponential("lambda_2", alpha)
+
+        tau = pm.DiscreteUniform("tau", lower=0, upper=n_count_data - 1)
+
+    with model:
+        idx = np.arange(n_count_data) # Index
+        lambda_ = pm.math.switch(tau >= idx, lambda_1, lambda_2)
+        observation = pm.Poisson("obs", lambda_, observed=count_data)
+        step = pm.Metropolis()
+        trace = pm.sample(10000, tune=5000,step=step)
+    return trace
+
+
 def generate_salt_trials(spike_train, epoch):
     """
     Generate test and baseline trials from spike train and epoch for salt.

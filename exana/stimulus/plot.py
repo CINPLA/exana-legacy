@@ -131,7 +131,9 @@ def plot_psth(sptr=None, epoch=None, t_start=None, t_stop=None, trials=None,
         ax, ax2 = axs
     if trials is None:
         assert sptr is not None
-        assert epoch is not None and t_start is not None and t_stop is not None
+        assert epoch is not None
+        t_start = t_start or 0 * pq.s
+        t_stop = t_stop or epoch.durations[0]
         trials = make_spiketrain_trials(epoch=epoch, t_start=t_start, t_stop=t_stop,
                                         spike_train=sptr)
         stim_duration = epoch.durations.rescale(dim).magnitude.max()
