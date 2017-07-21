@@ -1,7 +1,6 @@
 import numpy as np
 import quantities as pq
 
-
 def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
                      box_ylen=1*pq.m, mask_unvisited=True, convolve=True,
                      return_bins=False, smoothing=0.02):
@@ -87,6 +86,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
         return rate.T, xbins, ybins
     else:
         return rate.T
+
 
 
 def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
@@ -313,6 +313,7 @@ def nvisits_map(x, y, t,
         return nvisits_map.T
 
 
+
 def spatial_rate_map_1d(x, t, sptr,
                         binsize=0.01*pq.m,
                         track_len=1*pq.m,
@@ -395,3 +396,218 @@ def spatial_rate_map_1d(x, t, sptr,
         return rate.T, xbins
     else:
         return rate.T
+
+
+def calculate_grid_geometry(rate_map, plot_fields=False):
+    """Calculates quantitative information about grid field.
+    Find bump centers, bump spacing, center diplacement and hexagon
+    orientation
+
+    Parameters
+    ----------
+    rate_map : np 2d array
+               firing rate in each bin
+    plot_fields : if True, plots the field labels with field centers to the
+                  current matplotlib ax. Default False
+
+    Returns
+    -------
+    bump_centers : 2d np.array
+                   x,y positions of bump centers
+    avg_dist : float
+               average spacing between bumps, based on a hex-fit
+
+    displacement : float
+                   distance of bump closest to the center
+    orientation : float
+                  orientation of hexagon (in degrees)
+
+    Examples
+    --------
+
+    """
+
+    from scipy.ndimage import mean, center_of_mass
+
+    # TODO: smooth data?
+    # smooth_rate_map = lambda x:x
+    # rate_map = smooth_rate_map(rate_map)
+
+
+    fields, nfields = separate_fields(rate_map)
+    # indices starts at 1
+    indices = range(1,nfields+1)
+
+    bump_centers = center_of_mass(rate_map, labels=fields, index=indices)
+
+    if plot_fields:
+        import matplotlib.pyplot as plt
+        ax = plt.gca()
+        plt.axis([0,1,0,1])
+        plt.pcolormesh(fields)
+
+    # normalize to (0,1)
+    bump_centers = (np.array(bump_centers)/rate_map.shape)[:,::-1]
+
+    avg_dist = find_avg_dist(rate_map)
+
+    displacement, orientation = fit_hex(bump_centers, avg_dist, plot_bumps=plot_fields)
+    return bump_centers, avg_dist, displacement, orientation
+
+
+def separate_fields(rate_map, thrsh = 0):
+    """Separates fields using the laplacian to identify fields separated by
+    a negative second derivative.
+
+    Parameters
+    ----------
+    rate_map
+
+    thrsh : float
+        upper cutoff of laplacian to separate fields by. Should be <= 0.
+        (positive laplacian corresponds to dip in rate_map). Default 0.
+
+    Returns
+    -------
+    fields : numpy array, shape like rate_map.
+        contains areas all filled with same value, corresponding to fields
+        in rate_map. The values are in range(1,nFields + 1), sorted by size of the
+        field (sum of all field values). 0 elsewhere.
+
+    n_field : int
+        field count
+    """
+    from scipy.ndimage import laplace, label
+
+    l = laplace(rate_map)
+    l[l>thrsh] = 0
+
+    # Labels areas of the laplacian not connected by values > 0.
+    fields, n_fields = label(l)
+
+    return fields, n_fields
+
+
+def find_avg_dist(rate_map, thrsh = 0):
+    """Uses autocorrelation and separate_fields to find average distance
+    between bumps. """
+
+    from scipy.ndimage import center_of_mass
+    from exana.misc.tools import fftcorrelate2d
+
+    # autocorrelate. Returns array (2x - 1) the size
+    acorr = fftcorrelate2d(rate_map,rate_map)#, mode = 'full', normalize = True)
+
+    #acorr[acorr<0] = 0
+    f, nf = separate_fields(acorr,thrsh=thrsh) # TODO Find a valid value for thrsh, or 
+                                               # remove. This is a big problem
+
+    # index starts at 1!
+    fpos = center_of_mass(acorr, labels=f, index=range(1,nf+1))
+    fpos = np.array(fpos)
+
+    # find dists from center in (rate_map-)relative units (from 0 to 2)
+    distances = np.linalg.norm(fpos/rate_map.shape - (1,1), axis = 1)
+    dist_sort = np.argsort(distances)
+    distances = distances[dist_sort]
+
+    # use maximum 6 closest values except center value
+    avg_dist = np.average(distances[1:7])
+    return avg_dist
+
+
+
+def fit_hex(bump_centers, avg_dist=None, plot_bumps = False, method='best'):
+    """Fits a hex grid to a given set of bumps. Uses the three bumps most
+
+
+    Parameters
+    ----------
+    bump_centers : Nx2 np.array
+                x,y positions of bump centers, x,y /in (0,1)
+
+    avg_dist (optional): float
+                average spacing between bumps
+
+    plot_bumps (optional): bool
+                if True, plots at the three bumps most likely to be in
+                correct hex-position to the current matplotlib axes.
+
+    method (optional): string, valid options: ['closest', 'best']
+                method to find angle from neighboring bumps.
+                'closest' uses six bumps nearest to center bump
+                'best' uses the two bumps nearest to avg_dist
+
+    Returns
+    -------
+    displacement : float
+                   distance of bump closest to the center in meters
+    orientation : float
+                  orientation of hexagon (in degrees)
+    """
+
+    valid_methods = ['closest', 'best']
+    if method not in valid_methods:
+        msg = "Acceptable method flags are 'closest' or 'best'"
+        raise(ValueError, msg)
+    bump_centers = np.array(bump_centers)
+
+    # sort by distance to center
+    d = np.linalg.norm(bump_centers - (0.5,0.5), axis=1)
+    d_sort = np.argsort(d)
+    dist_sorted = bump_centers[d_sort]
+    center_bump = dist_sorted[0]; others = dist_sorted[1:]
+
+    displacement = d[d_sort][0]
+
+    # others distances to center bumps
+    relpos = others - center_bump
+    reldist = np.linalg.norm(relpos, axis=1)
+
+    if method == 'closest':
+        # get 6 closest bumps
+        rel_sort = np.argsort(reldist)
+        closest = others[rel_sort][:6]
+        relpos = relpos[rel_sort][:6]
+    elif method == 'best':
+        # get 2 bumps such that /sum_{i\neqj}(\abs{r_i-r_j}-avg_ist)^2 is minimized 
+        squares = 1e32*np.ones((others.shape[0], others.shape[0]))
+        
+        for i in range(len(relpos)):
+            for j in range(i,len(relpos)):
+                rel1 = (reldist[i] - avg_dist)**2
+                rel2 = (reldist[j] - avg_dist)**2
+                rel3 = (np.linalg.norm(relpos[i]-relpos[j]) - avg_dist)**2
+                squares[i,j] = rel1 + rel2 + rel3
+        rel_slice = np.unravel_index(np.argmin(squares), squares.shape)
+        rel_slice = np.array(rel_slice)
+        #rel_sort = np.argsort(np.abs(reldist-avg_dist))
+        closest = others[rel_slice]
+        relpos = relpos[rel_slice]
+
+    # sort by angle
+    a = np.arctan2(relpos[:,1], relpos[:,0])%(2*np.pi)
+    a_sort = np.argsort(a)
+    print (relpos)
+
+    # extract lowest angle and convert to degrees
+    orientation = a[a_sort][0] *180/np.pi
+
+    if plot_bumps:
+        import matplotlib.pyplot as plt
+        ax=plt.gca()
+        i = 1
+        xmin, xmax = ax.get_xlim()
+        ymin, ymax = ax.get_ylim()
+        print(xmin,xmax,ymin,ymax)
+        dx = xmax-xmin; dy = ymax - ymin
+
+        closest = closest[a_sort]
+        
+        edges = [center_bump] if method == 'best' else []
+        edges += [c for c in closest]
+        edges = np.array(edges)*(dx,dy) + (xmin, ymin)
+        poly = plt.Polygon(edges, alpha=0.5,color='r')
+        ax.add_artist(poly)
+    return displacement, orientation
+
