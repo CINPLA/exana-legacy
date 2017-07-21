@@ -105,7 +105,7 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
 
     Parameters
     ----------
-    rate_map : numpy.ndarray
+    rate_map : numpy.ndarrayindices ofa
     box_xlen : quantities scalar in m
         side length of quadratic box
     step_size : quantities scalar in m
@@ -415,7 +415,7 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
     bump_centers : 2d np.array
                    x,y positions of bump centers
     avg_dist : float
-               average spacing between bumps, based on a hex-fit
+               average spacing between bumps, \in [0,1]
 
     displacement : float
                    distance of bump closest to the center
@@ -438,6 +438,26 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
 
     Examples
     --------
+    >>> import numpy as np
+    >>> rate_map = np.zeros((5,5))
+    >>> pos = np.array([  [0,2],
+    ...                [1,0],[1,4], 
+    ...                   [2,2], 
+    ...                [3,0],[3,4],
+    ...                   [4,2]])
+    >>> for(i,j) in pos:
+    ...     rate_map[i,j] = 1                                                                 
+    ... 
+    >>> calculate_grid_geometry(rate_map)
+    (array([[ 0.5 ,  0.  ],
+           [ 0.  ,  0.25],
+           [ 1.  ,  0.25],
+           [ 0.5 ,  0.5 ],
+           [ 0.  ,  0.75],
+           [ 1.  ,  0.75],
+           [ 0.5 ,  1.  ]]), 0.53934466291663163, 0.0, 26.565051177077976)
+>>> 
+
 
     """
 
@@ -463,18 +483,17 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
     sh = np.array(rate_map.shape)
 
     if plot_fields:
+        print(fields)
         import matplotlib.pyplot as plt
-        x=np.linspace(0,1,sh[0])
-        y=np.linspace(0,1,sh[1])
+        x=np.linspace(0,1,sh[0]+1)
+        y=np.linspace(0,1,sh[1]+1)
         x,y = np.meshgrid(x,y)
         ax = plt.gca()
+        print('nfieilds',nfields)
         plt.pcolormesh(x,y, fields)
-        plt.axis([0,1,0,1])
 
     # normalize to (0,1) and switch from row-column to x-y
     bump_centers = (np.array(bump_centers)/(sh-1))[:,::-1]
-
-
 
     thrsh = kwargs.pop('thrsh', None)
     if thrsh:
@@ -494,12 +513,11 @@ def separate_fields(rate_map, thrsh = 0, center_method = 'maxima'):
 
     Parameters
     ----------
-    rate_map
-
+    rate_map : np 2d array
+        firing rate in each bin
     thrsh : float
         upper cutoff of laplacian to separate fields by. Should be <= 0.
         (positive laplacian corresponds to dip in rate_map). Default 0.
-
     center_method : string. valid options = ['center_of_mass', 'maxima']
         method to find field centers.
 
@@ -509,11 +527,10 @@ def separate_fields(rate_map, thrsh = 0, center_method = 'maxima'):
         contains areas all filled with same value, corresponding to fields
         in rate_map. The values are in range(1,nFields + 1), sorted by size of the
         field (sum of all field values). 0 elsewhere.
-
     n_field : int
         field count
-
-    bump_centers : 
+    bump_centers : (n_field x 2) np ndarray 
+        Coordinates of field centers
     """
     if center_method not in ['maxima','center_of_mass']:
         msg = "invalid center_method flag '%s'" % center_method
@@ -541,7 +558,7 @@ def separate_fields(rate_map, thrsh = 0, center_method = 'maxima'):
 
 def find_avg_dist(rate_map, thrsh = 0):
     """Uses autocorrelation and separate_fields to find average distance
-    between bumps. 
+    between bumps.
     
     Parameters
     ----------
@@ -549,10 +566,10 @@ def find_avg_dist(rate_map, thrsh = 0):
                firing rate in each bin
     
     thrsh (optional) : float, default 0
-            cutoff value for the laplacian, should be a negative
-            number. Helps if bumps are connected by "bridges" or
-            saddles where the laplacian is negative (should only
-            be negative at individual bumps)
+            cutoff value for the laplacian of the autocorrelation function.
+            Should be a negative number. Gives better separation if bumps
+            are connected by "bridges" or saddles where the laplacian is
+            negative. 
         """
 
     from scipy.ndimage import maximum_position
@@ -579,6 +596,8 @@ def find_avg_dist(rate_map, thrsh = 0):
 
     # use maximum 6 closest values except center value
     avg_dist = np.average(distances[1:7])
+
+    # TODO : Return warning message if to big difference between points
     return avg_dist
 
 
@@ -658,6 +677,9 @@ def fit_hex(bump_centers, avg_dist=None, plot_bumps = False, method='best'):
     # extract lowest angle and convert to degrees
     orientation = a[a_sort][0] *180/np.pi
 
+    # hex grid is symmetric under rotations of 60deg
+    orientation %= 60
+
     if plot_bumps:
         import matplotlib.pyplot as plt
         ax=plt.gca()
@@ -675,3 +697,7 @@ def fit_hex(bump_centers, avg_dist=None, plot_bumps = False, method='best'):
         ax.add_artist(poly)
     return displacement, orientation
 
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

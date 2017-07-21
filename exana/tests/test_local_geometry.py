@@ -111,7 +111,6 @@ def test_calculate_grid_geometry():
 
 
 
-
 if __name__ == "__main__":
     test_separate_fields()
     test_find_avg_dist()
