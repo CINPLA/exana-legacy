@@ -1,6 +1,7 @@
 import numpy as np
 import quantities as pq
 
+
 def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
                      box_ylen=1*pq.m, mask_unvisited=True, convolve=True,
                      return_bins=False, smoothing=0.02):
@@ -88,7 +89,6 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
         return rate.T
 
 
-
 def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
              step_size=0.1*pq.m):
     '''Calculates gridness of a rate map. Calculates the normalized
@@ -105,7 +105,7 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
 
     Parameters
     ----------
-    rate_map : numpy.ndarrayindices ofa
+    rate_map : numpy.ndarray
     box_xlen : quantities scalar in m
         side length of quadratic box
     step_size : quantities scalar in m
@@ -313,7 +313,6 @@ def nvisits_map(x, y, t,
         return nvisits_map.T
 
 
-
 def spatial_rate_map_1d(x, t, sptr,
                         binsize=0.01*pq.m,
                         track_len=1*pq.m,
@@ -416,7 +415,6 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
                    x,y positions of bump centers
     avg_dist : float
                average spacing between bumps, \in [0,1]
-
     displacement : float
                    distance of bump closest to the center
     orientation : float
@@ -427,11 +425,9 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
     ----------------
     thrsh : float, default 0
             see find_avg_dist()
-
     center_method : string, valid options: ['maxima', 'center_of_mass']
             default: 'center_of_mass'
             see separate_fields()
-
     method : string, valid options: ['closest', 'best']
             see fit_hex()
 
@@ -507,7 +503,8 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
     return bump_centers, avg_dist, displacement, orientation
 
 
-def separate_fields(rate_map, thrsh = 0, center_method = 'maxima'):
+def separate_fields(rate_map, thrsh = 0, center_method = 'maxima',
+        mean_cutoff=False):
     """Separates fields using the laplacian to identify fields separated by
     a negative second derivative.
 
@@ -518,8 +515,10 @@ def separate_fields(rate_map, thrsh = 0, center_method = 'maxima'):
     thrsh : float
         upper cutoff of laplacian to separate fields by. Should be <= 0.
         (positive laplacian corresponds to dip in rate_map). Default 0.
-    center_method : string. valid options = ['center_of_mass', 'maxima']
-        method to find field centers.
+    center_method : string
+        method to find field centers. Valid options = ['center_of_mass', 'maxima']
+    mean_cutoff (optional) : bool
+        Only return fields with field mean larger than total mean
 
     Returns
     -------
@@ -536,22 +535,36 @@ def separate_fields(rate_map, thrsh = 0, center_method = 'maxima'):
         msg = "invalid center_method flag '%s'" % center_method
         raise ValueError(msg)
 
+    from scipy import ndimage
     from scipy.ndimage import laplace, label
 
-    l = laplace(rate_map)
+    l = ndimage.laplace(rate_map)
     l[l>thrsh] = 0
 
     # Labels areas of the laplacian not connected by values > 0.
-    fields, n_fields = label(l)
+    fields, n_fields = ndimage.label(l)
 
-    indices = range(1,n_fields+1)
+    indx = range(1,n_fields+1)
+
+    if mean_cutoff:
+        field_mean = ndimage.labeled_comprehension(rate_map, fields, indx, 
+                np.mean, float, 0)
+        total_mean = np.mean(fields)
+        is_field = field_mean > total_mean
+        new_indx = []
+        for i in indx:
+            if not is_field[i-1]:
+                fields[fields == i] = 0
+            else:
+                new_indx.append(i)
+        indx = new_indx
 
     if center_method == 'maxima':
-        from scipy.ndimage import maximum_position
-        bump_centers = maximum_position(rate_map, labels=fields, index=indices)
+        bump_centers = ndimage.maximum_position(rate_map, labels=fields,
+                index=indx)
     if center_method == 'center_of_mass':
-        from scipy.ndimage import center_of_mass
-        bump_centers = center_of_mass(rate_map, labels=fields, index=indices)
+        bump_centers = ndimage.center_of_mass(rate_map, labels=fields,
+                index=indx)
 
     return fields, n_fields, np.array(bump_centers)
 
