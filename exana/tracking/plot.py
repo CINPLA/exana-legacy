@@ -3,10 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import quantities as pq
-from .fields import gridness, spatial_rate_map, occupancy_map
+from .fields import (gridness, occupancy_map,
+                     spatial_rate_map,
+                     spatial_rate_map_1d)
+from .tools import (rescale_linear_track_2d_to_1d)
 from .head import *
 from ..misc.plot import simpleaxis
 import math
+from scipy.ndimage.measurements import center_of_mass
+import matplotlib.gridspec as gridspec
 
 
 def plot_path(x, y, t, box_xlen, box_ylen, sptr=None,
@@ -124,7 +129,7 @@ def plot_ratemap(x, y, t, sptr, binsize=0.05*pq.m, box_size=1*pq.m,
                  vmin=0, ax=None, mask_unvisited=True, convolve=True,
                  origin='upper', cmap='jet'):
     """
-
+    
 
     Parameters
     ----------
@@ -155,6 +160,144 @@ def plot_ratemap(x, y, t, sptr, binsize=0.05*pq.m, box_size=1*pq.m,
     return ax
 
 
+def plot_ratemap_linear_track(x, t, sptr,
+                              binsize=0.05*pq.m,
+                              track_len=2*pq.m,
+                              end_0=[],
+                              end_1=[],
+                              vmin=0,
+                              ax=None,
+                              mask_unvisited=True,
+                              convolve=True,
+                              origin='upper',
+                              cmap='jet'):
+    """
+    Plot ratemap along one dimension
+
+    Parameters
+    ----------
+    x : 1d vector of x positions
+    t : 1d vector of time at x
+    sptr : one neo.SpikeTrain
+    binsize : size of spatial bins
+    vmin : color min
+    ax : matplotlib axes
+    mask_unvisited : True: mask bins which has not been visited
+
+    Returns
+    -------
+    out : axes
+    
+    """
+    
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, xlim=[0, 1], ylim=[0, 1], aspect=1)
+    rate_map = spatial_rate_map_1d(x, t, sptr, binsize=binsize,
+                                   mask_unvisited=mask_unvisited,
+                                   box_size=box_size,
+                                   convolve=convolve)
+    ax.imshow(rate_map, interpolation='none', origin=origin,
+              extent=(0, 1, 0, 1), vmin=vmin, cmap=cmap)
+    ax.grid(False)
+    return ax
+
+
+def plot_ratemaps_linear_track(x, t, sptrs,
+                               binsize=0.05*pq.m,
+                               track_len=2*pq.m,
+                               end_0=[],
+                               end_1=[],
+                               vmin=0,
+                               vmax=None,
+                               mask_unvisited=True,
+                               convolve=True,
+                               origin='upper',
+                               cmap='jet',
+                               return_bins=False):
+    """
+    Plot ratemaps along one dimension for multiple neurons
+
+    Parameters
+    ----------
+    x : 1d vector of x positions
+    t : 1d vector of time at x
+    sptr : one neo.SpikeTrain
+    binsize : size of spatial bins
+    vmin : color min
+    ax : matplotlib axes
+    mask_unvisited : True: mask bins which has not been visited
+
+    Returns
+    -------
+    out : axes
+    
+    """
+
+    n_sptr = len(sptrs)
+
+    rate_maps = []
+    coms = []  # centers of masses
+    unit_names = []
+    for sptr in sptrs:
+        # compute rate maps
+        rate_map, bins = spatial_rate_map_1d(x, t, sptr,
+                                             binsize=binsize,
+                                             track_len=track_len,
+                                             mask_unvisited=True,
+                                             convolve=False,
+                                             return_bins=True,
+                                             smoothing=0.02)
+        rate_maps.append(rate_map)
+        # calc center of mass
+        com = center_of_mass(rate_map)[0]
+        coms.append(com)
+        unit_names.append(sptr.unit.name)
+    # set vmax to max rate if it does not exist
+    if vmax is None:
+        vmax = np.max(np.array(rate_maps).flatten())
+    com_ordering = np.argsort(coms)
+
+    fig = plt.figure(figsize=(1*n_sptr, 8))
+    fig.suptitle('Spatial rate maps on linear track')
+    gs = gridspec.GridSpec(n_sptr, 1)
+    gs.update(hspace=0.0)
+
+    for i, i_ord in enumerate(com_ordering):
+        ax = fig.add_subplot(gs[i])
+        map_i = np.expand_dims(rate_maps[i_ord], axis=0)
+        im = ax.imshow(map_i,
+                       interpolation='none',
+                       origin=origin,
+                       vmin=vmin,
+                       vmax=vmax,
+                       extent=(0, track_len.rescale('m').magnitude,
+                               0, 1/n_sptr*2),
+                       cmap=cmap)
+        ax.set_ylabel(str(unit_names[i_ord]))
+        ax.set_yticks([])
+        ax.set_yticklabels([])
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        if i+1 < len(com_ordering):
+            ax.set_xticks([])
+            ax.set_xticklabels([])
+            ax.spines['bottom'].set_visible(False)
+        if i+1 == len(com_ordering):
+            ax.set_xticklabels
+            ax.set_xlabel('x [' + str(x.units) + ']')
+
+    fig.subplots_adjust(right=0.9)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    fig.colorbar(im, cax=cbar_ax)
+    if return_bins:
+        return fig, bins
+    else:
+        return fig
+    # Todo: Empty bin on left
+
+    
 def plot_occupancy(x, y, t, binsize=0.05*pq.m, box_xlen=1*pq.m, box_ylen=1*pq.m,
                   vmin=0, ax=None, convolve=True,
                   origin='upper', cmap='jet'):

@@ -132,76 +132,65 @@ def make_orientation_trials(trials, unit=pq.deg):
                               key=lambda x: _convert_string_to_quantity_scalar(x[0]).magnitude))
 
 
-def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None):
+def make_spiketrain_trials(epo, t_start, t_stop, unit=None, sptr=None):
     '''
     Makes trials based on an Epoch and given temporal bound
     Parameters
     ----------
-    spike_train : neo.SpikeTrain, neo.Unit, numpy.array, quantities.Quantity
-    epoch : neo.Epoch
+    epo : neo.Epoch
     t_start : quantities.Quantity
-        time before epochs, default is 0 s
+        time before epochs
     t_stop : quantities.Quantity
-        time after epochs default is duration of epoch
+        time after epochs
+    unit : neo.Unit
+    sptr : neo.SpikeTrain
     Returns
     -------
     out : list of neo.SpikeTrains
     '''
     from neo.core import SpikeTrain
-    t_start = t_start or 0 * pq.s
+
     if t_start.ndim == 0:
-        t_starts = t_start * np.ones(len(epoch.times))
+        t_starts = t_start * np.ones(len(epo.times))
     else:
         t_starts = t_start
-        assert len(epoch.times) == len(t_starts), 'epoch.times and t_starts have different size'
+        assert len(epo.times) == len(t_starts), 'epo.times and t_starts have different size'
 
-    t_stop = t_stop or epoch.durations
     if t_stop.ndim == 0:
-        t_stops = t_stop * np.ones(len(epoch.times))
+        t_stops = t_stop * np.ones(len(epo.times))
     else:
-        t_stops = t_stop
-        assert len(epoch.times) == len(t_stops), 'epoch.times and t_stops have different size'
+        t_stops = epo.durations
+        assert len(epo.times) == len(t_stops), 'epo.times and t_stops have different size'
 
     dim = 's'
 
-    if isinstance(spike_train, neo.Unit):
+    if sptr is None:
+        assert unit is not None, 'unit and st cannot be both None'
         sptr = []
         for st in unit.spiketrains:
-            sptr.append(spike_train.rescale(dim).magnitude)
-        sptr = np.sort(sptr) * pq.s
-    elif isinstance(spike_train, neo.SpikeTrain):
-        sptr = spike_train.times.rescale(dim)
-    elif isinstance(spike_train, pq.Quantity):
-        assert is_quantities(spike_train, 'vector')
-        sptr = spike_train.rescale(dim)
-    elif isinstance(spike_train, np.array):
-        sptr = spike_train * pq.s
+            sptr.append(st.rescale(dim).magnitude)
+        sptr = np.array(st)*pq.s
     else:
-        raise TypeError('Expected (neo.Unit, neo.SpikeTrain, ' +
-                        'quantities.Quantity, numpy.array), got "' +
-                        str(type(spike_train)) + '"')
-    if not isinstance(epoch, neo.Epoch):
-        raise TypeError('Expected "neo.Epoch" got "' + str(type(epoch)) + '"')
-
+        sptr = sptr.rescale(dim)
     trials = []
-    for j, t in enumerate(epoch.times.rescale(dim)):
+    for j, t in enumerate(epo.times.rescale(dim)):
         t_start = t_starts[j].rescale(dim)
         t_stop = t_stops[j].rescale(dim)
         spikes = []
         for spike in sptr[(t+t_start < sptr) & (sptr < t+t_stop)]:
             spikes.append(spike-t)
-        trials.append(SpikeTrain(times=spikes * pq.s,
+        trials.append(SpikeTrain(times=spikes*pq.s,
                                  t_start=t_start,
                                  t_stop=t_stop))
     return trials
 
 
-def make_analog_trials(ana, epoch, t_start, t_stop):
+def make_analog_trials(ana, epo, t_start, t_stop):
     '''
     Makes trials based on an Epoch and given temporal bound
     Parameters
     ----------
-    epoch : neo.Epoch
+    epo : neo.Epoch
     t_start : quantities.Quantity
         time before epochs
     t_stop : quantities.Quantity
@@ -216,7 +205,7 @@ def make_analog_trials(ana, epoch, t_start, t_stop):
     dim = 's'
     t_start = t_start.rescale(dim)
     t_stop = t_stop.rescale(dim)
-    times = epoch.times.rescale(dim)
+    times = epo.times.rescale(dim)
     trials = []
     nsamp = int(abs(t_start - t_stop) * ana.sampling_rate)-1
     for j, t in enumerate(times):

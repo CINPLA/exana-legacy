@@ -1,6 +1,9 @@
 import numpy as np
 import quantities as pq
 from ..misc.tools import is_quantities, normalize
+from ..misc.peakdetect import peakdetect
+import pdb
+import scipy.signal as sig
 
 
 def _cut_to_same_len(*args):
@@ -276,3 +279,160 @@ def velocity_threshold(x, y, t, threshold):
     y[speed_lim] = np.nan * y.units
     x, y, t = rm_nans(x, y, t)
     return x, y, t
+
+
+def unit_vector(v):
+    """ Return unit vector of v
+    modified from David Wolever,
+    https://stackoverflow.com/questions/2827393/angles
+    -between-two-n-dimensional-vectors-in-python
+    """
+    return v / np.linalg.norm(v)
+
+
+def angle_between_vectors(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'
+    modified from David Wolever,
+    https://stackoverflow.com/questions/2827393/angles
+    -between-two-n-dimensional-vectors-in-python
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+
+def rescale_linear_track_2d_to_1d(x, y, end_0=[], end_1=[]):
+    """ Take x, y coordinates of linear track data, rescale to 1-d.
+    
+    Parameters
+    ----------
+    x : quantities.Quantity array in m
+        1d vector of x positions
+    y : quantities.Quantity array in m
+        1d vector of x positions
+    t : quantities.Quantity array in s
+        1d vector of times at x, y positions
+    end_0: quantities.Quantity array in m
+        linear track endpoint 1, in x, y
+    end_1: quantities.Quantity array in m
+        linear track endpoint 2, in x, y
+
+    Returns
+    -------
+    out : 1d vector
+    """
+    from exana.misc.tools import is_quantities
+    if not all([len(var) == len(var2) for var in
+                [x, y] for var2 in [x, y]]):
+        raise ValueError('x, y, t must have same number of elements')
+    is_quantities([x, y], 'vector')
+    x = x.rescale('m').magnitude
+    y = y.rescale('m').magnitude
+    if len(end_0) != 2 or len(end_1) != 2:
+        raise ValueError('end_0 and end_1 must be 2d vectors')
+    end_0 = end_0.rescale('m').magnitude
+    end_1 = end_1.rescale('m').magnitude
+    # shift coordinate system to have end_0 as origin
+    x -= end_0[0]
+    y -= end_0[1]
+
+    # calculate angle of track
+    v_x_axis = np.array([1, 0])
+    theta = angle_between_vectors(end_1-end_0, v_x_axis)
+    # rotate clockwise
+    rot_mat = np.array([[np.cos(-theta), -np.sin(-theta)],
+                        [np.sin(-theta),  np.cos(-theta)]])
+    x_rot = []
+    for x_i, y_i in zip(x, y):
+        [x_rot_i, _] = np.dot(rot_mat,
+                              np.array([[x_i],
+                                        [y_i]]))
+        x_rot.append(x_rot_i.item())
+    # shift x_rot so that np.min(x_rot) == 0
+    x_rot -= np.min(x_rot)
+    # only consider x_rot in output
+    return x_rot*pq.m
+
+
+def find_laps(peaks_start, peaks_stop, valid_start, valid_stop):
+    laps = []
+    for t_start, x_start in peaks_start:
+        # check if current peak is in valid start position
+        if not valid_start[0] <= x_start <= valid_start[1]:
+            continue
+        # find next maxpeak in time
+        res = np.where(peaks_stop[:, 0] > t_start)[0]
+        if len(res) == 0:
+            continue
+        id_stop = res[0]
+        t_stop = peaks_stop[id_stop, 0]
+        x_stop = peaks_stop[id_stop, 1]
+        # check if stop peak is in its valid start zone
+        if not valid_stop[0] <= x_stop <= valid_stop[1]:
+            continue
+        # add start and end time of lap
+        laps.append([[t_start, t_stop], [x_start, x_stop]])
+    return laps
+
+
+def identify_laps_on_linear_track(x,
+                                  t,
+                                  kernel='auto',
+                                  val_margin=.3,
+                                  track_len='max'):
+    """  Individual laps on linear track are identified by,
+      a) smoothing trajectory
+      b) find peaks of trajectory
+      c) connect minimal and maximal peaks, if they are located in
+         the respective region at the end of the track.
+         The region extends from the end of the track to max_length*val_margin
+
+    Parameters
+    ----------
+    x : quantities.Quantity array in m
+        1d vector of x positions
+    t : quantities.Quantity array in s
+        1d vector of times at x positions
+    kernel : numpy.ndarray|str['auto']
+        Kernel for smoothing of trajectory
+        If 'auto', boxcar kernel will be used
+    val_margin : float
+        Fraction of environment that defines valid zone of return
+        points at beginning and end of track
+    track_len : float|str['max']
+        Lenght of linear track
+        If 'max', maximal pos value will be used
+
+    Returns
+    -------
+    laps_start2end, list of [x_start, x_stop],[t_start, t_stop]
+    laps_end2start, list of [x_start, x_stop],[t_start, t_stop]
+
+    """
+    t = t.rescale('s')
+    sampling_rate = np.median(np.diff(t))
+    x = x.rescale('m')
+    
+    if kernel == 'auto':
+        filter_width = int(np.ceil(5*sampling_rate))
+        kernel = np.ones(filter_width)/filter_width
+    x_filt = sig.convolve(x, kernel, mode='same') * pq.m
+
+    max_peaks, min_peaks = peakdetect(x_filt, t)
+    max_peaks = np.array(max_peaks)
+    min_peaks = np.array(min_peaks)
+
+    if track_len == 'max':
+        x_max = np.max(x_filt)
+    else:
+        x_max = track_len
+        
+    valid_start = [0. * pq.m,
+                   val_margin*x_max]
+    valid_stop = [x_max - val_margin * x_max,
+                  x_max]
+
+    laps_start2end = find_laps(min_peaks, max_peaks, valid_start, valid_stop)
+    laps_end2start = find_laps(max_peaks, min_peaks, valid_stop, valid_start)
+
+    return laps_start2end, laps_end2start
