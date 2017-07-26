@@ -504,7 +504,7 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
 
 
 def separate_fields(rate_map, thrsh = 0, center_method = 'maxima',
-        mean_cutoff=False):
+        mean_cutoff=True):
     """Separates fields using the laplacian to identify fields separated by
     a negative second derivative.
 
@@ -565,6 +565,7 @@ def separate_fields(rate_map, thrsh = 0, center_method = 'maxima',
     if center_method == 'center_of_mass':
         bump_centers = ndimage.center_of_mass(rate_map, labels=fields,
                 index=indx)
+    # TODO exclude fields where maxima is on the edge of the field.
 
     return fields, n_fields, np.array(bump_centers)
 
