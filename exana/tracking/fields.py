@@ -410,8 +410,9 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
     rate_map : np 2d array
         firing rate in each bin
     laplace_thrsh : float
-        upper value of laplacian to separate fields by. Should be <= 0.
-        (positive laplacian corresponds to dip in rate_map). Default 0.
+        value of laplacian to separate fields by relative to the minima. Should be
+        on the interval 0 to 1, where 0 cuts off at 0 and 1 cuts off at
+        min(laplace(rate_map)). Default 0.
     center_method : string
         method to find field centers. Valid options = ['center_of_mass',
         'maxima','gaussian_fit']
@@ -452,7 +453,8 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
     from scipy.ndimage import laplace, label
 
     l = ndimage.laplace(rate_map)
-    l[l>laplace_thrsh] = 0
+
+    l[l>laplace_thrsh*np.min(l)] = 0
 
     # Labels areas of the laplacian not connected by values > 0.
     fields, n_fields = ndimage.label(l)
@@ -467,7 +469,6 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
         except:
             print('Unexpected error, cutoff_func doesnt like the input:')
             raise
-        
 
         field_values = ndimage.labeled_comprehension(rate_map, fields, indx, 
                 cutoff_func, float, 0)
