@@ -482,9 +482,20 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
             if not is_field[i-1]:
                 fields[fields == i] = 0
 
-        # relabel to get new indices
-        fields, n_fields = ndimage.label(fields)
+        
+        # relabel fields to get new indices
+        n_fields = ndimage.label(fields, output=fields)
         indx = range(1,n_fields + 1)
+
+    # Sort by largest mean 
+    sizes = ndimage.labeled_comprehension(rate_map, fields, indx, 
+            np.mean, float, 0)
+    size_sort = np.argsort(sizes)[::-1]
+    new = np.zeros_like(fields)
+    for i in range(n_fields):
+        new[fields == size_sort[i]+1] = i+1
+    fields = new
+
 
     if center_method == 'maxima':
         bc = ndimage.maximum_position(rate_map, labels=fields, index=indx)
@@ -498,14 +509,14 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
             r = rate_map.copy()
             r[fields != i] = 0
             popt = fit_gauss_asym(r, return_data=False)
-            bc[i-1] = (popt[2],popt[1])
+            bc[i-1] = (popt[2],popt[1]) * box_xlen.units
 
         if index:
             msg = 'method index not implemented for gaussian fit'
             raise NotImplementedError(msg)
     bc = np.array(bc)
     if not index and not center_method=='gaussian_fit':
-        bc = (bc - (0.5,0.5))/rate_map.shape
+        bc = (bc - (0.5,0.5))/rate_map.shape * box_xlen.units
 
     # TODO exclude fields where maxima is on the edge of the field?
     return fields, n_fields, bc
