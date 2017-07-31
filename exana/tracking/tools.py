@@ -446,3 +446,65 @@ def identify_laps_on_linear_track(x,
     laps_end2start = find_laps(max_peaks, min_peaks, valid_stop, valid_start)
 
     return laps_start2end, laps_end2start
+
+
+def gaussian2D_asym(pos, amplitude, xc, yc, sigma_x, sigma_y, theta):
+    x,y = pos
+    
+    a = (np.cos(theta)**2)/(2*sigma_x**2) + (np.sin(theta)**2)/(2*sigma_y**2)
+    b = -(np.sin(2*theta))/(4*sigma_x**2) + (np.sin(2*theta))/(4*sigma_y**2)
+    c = (np.sin(theta)**2)/(2*sigma_x**2) + (np.cos(theta)**2)/(2*sigma_y**2)
+    g = amplitude*np.exp( - (a*((x-xc)**2) + 2*b*(x-xc)*(y-yc) 
+                            + c*((y-yc)**2)))
+    return g.ravel()
+
+
+def fit_gauss_asym(data, p0 = None, return_data=True):
+    """Fits an asymmetric 2D gauss function to the given data set, with optional guess
+    parameters. Optimizes amplitude, center coordinates, sigmax, sigmay and
+    angle. If no guess parameters, initializes with a thin gauss bell
+    centered at the data maxima
+
+    Parameters:
+    -----------
+    data        : 2D np array
+    p0 (optional): arraylike
+                  initial parameters [amplitude,x_center,y_center,sigma_x, sigma_y,angle]
+    return_data : bool
+
+    
+
+    Returns:
+    --------
+    params      : tuple of params: (amp,xc,yc,sigmax, sigmay, angle)
+    (if return_data) data_fitted : 2D np array
+                                   the fitted gauss data
+
+    """
+    from scipy.optimize import curve_fit
+    # Create x and y indices
+    sx, sy = data.shape
+    xmin, xmax = 0, 1
+    ymin, ymax = 0, 1
+    x = np.linspace(xmin, xmax, sx)
+    y = np.linspace(ymin, ymax, sy)
+    x, y = np.meshgrid(x, y)
+
+    if p0 is None:
+        # initial guesses, use small gaussian at maxima as initial guess
+        ia =     np.max(data)                                # amplitude 
+        index = np.unravel_index(np.argmax(data), (sx, sy))  # center
+        ix, iy = x[index], y[index]
+        isig =   0.01 
+        iang = 0
+        
+        p0 = (ia, ix, iy, isig, isig, iang)
+
+    popt, pcov = curve_fit(gaussian2D_asym, (x, y), data.ravel(), p0=p0)
+    # TODO : Add test for pcov
+    if return_data:
+        data_fitted = gaussian2D_asym((x, y), *popt)
+        return popt, data_fitted.reshape(sx,sy)
+    else:
+        return popt
+
