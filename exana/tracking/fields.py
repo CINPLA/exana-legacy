@@ -435,22 +435,18 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
         Coordinates of field centers
     """
 
-    if center_method not in ['maxima','center_of_mass','gaussian_fit']:
-        msg = "invalid center_method flag '%s'" % center_method
-        raise ValueError(msg)
     
     cutoff_functions = {'mean':np.mean, 'median':np.median, 'none':None}
     if not callable(cutoff_method):
-        if cutoff_method not in ['median', 'mean','none']:
+        try:
+            cutoff_func = cutoff_functions[cutoff_method]
+        except KeyError:
             msg = "invalid cutoff_method flag '%s'" % cutoff_method
             raise ValueError(msg)
-        else:
-            cutoff_func = cutoff_functions[cutoff_method]
     else:
         cutoff_func = cutoff_method
 
     from scipy import ndimage
-    from scipy.ndimage import laplace, label
 
     l = ndimage.laplace(rate_map)
 
@@ -496,30 +492,45 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
         new[fields == size_sort[i]+1] = i+1
     fields = new
 
-
-    if center_method == 'maxima':
-        bc = ndimage.maximum_position(rate_map, labels=fields, index=indx)
-    elif center_method == 'center_of_mass':
-        bc = ndimage.center_of_mass(rate_map, labels=fields, index=indx)
-    elif center_method == 'gaussian_fit':
-        from  exana.tracking.tools import fit_gauss_asym
-        bc = np.zeros((n_fields,2))
-        import matplotlib.pyplot as plt
-        for i in indx:
-            r = rate_map.copy()
-            r[fields != i] = 0
-            popt = fit_gauss_asym(r, return_data=False)
-            bc[i-1] = (popt[2],popt[1]) * box_xlen.units
-
-        if index:
-            msg = 'method index not implemented for gaussian fit'
-            raise NotImplementedError(msg)
-    bc = np.array(bc)
-    if not index and not center_method=='gaussian_fit':
-        bc = (bc - (0.5,0.5))/rate_map.shape * box_xlen.units
+    bc = get_bump_centers(rate_map,labels=fields,ret_index=index,indices=indx,method=center_method,
+                          units=box_xlen.units)
 
     # TODO exclude fields where maxima is on the edge of the field?
     return fields, n_fields, bc
+
+def get_bump_centers(rate_map, labels, ret_index=False, indices=None, method='maxima',
+        units=1*pq.m):
+    """Finds center of fields at labels."""
+    
+    from scipy import ndimage
+
+    if method not in ['maxima','center_of_mass','gaussian_fit']:
+        msg = "invalid center_method flag '%s'" % method
+        raise ValueError(msg)
+    if indices is None:
+        indices = np.arange(1,np.max(labels)+1)
+    if method == 'maxima':
+        bc = ndimage.maximum_position(rate_map, labels=labels,
+                index=indices)
+    elif method == 'center_of_mass':
+        bc = ndimage.center_of_mass(rate_map, labels=labels, index=indices)
+    elif method == 'gaussian_fit':
+        from  exana.tracking.tools import fit_gauss_asym
+        bc = np.zeros((len(indices),2))
+        import matplotlib.pyplot as plt
+        for i in indices:
+            r = rate_map.copy()
+            r[labels != i] = 0
+            popt = fit_gauss_asym(r, return_data=False)
+            # TODO Find out which axis is x and which is y
+            bc[i-1] = (popt[2],popt[1]) 
+        if ret_index:
+            msg = 'ret_index not implemented for gaussian fit'
+            raise NotImplementedError(msg)
+    if not ret_index and not method=='gaussian_fit':
+        bc = (bc + np.array((0.5,0.5)))/rate_map.shape 
+    return np.array(bc)*units
+
 
 
 def find_avg_dist(rate_map, thrsh = 0):
