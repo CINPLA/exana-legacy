@@ -508,3 +508,73 @@ def fit_gauss_asym(data, p0 = None, return_data=True):
     else:
         return popt
 
+
+from astropy.convolution import Gaussian2DKernel, convolve_fft
+
+
+
+def separation_error_func(smoothing, lpl_thrsh, rate_map):
+    if np.isnan(smoothing):
+        return np.inf
+    import exana.tracking as tr
+    nan_mask = np.isnan(rate_map)
+    rate_map[nan_mask] = 0. 
+
+    box_xlen = 1*pq.m
+    binsize = 0.02*pq.m
+    csize = (box_xlen / binsize) * smoothing
+    kernel = Gaussian2DKernel(csize)
+    rm_smooth = convolve_fft(rate_map, kernel)  # TODO edge correction
+    f, nf, bc = tr.fields.separate_fields(rm_smooth, laplace_thrsh=lpl_thrsh,
+                                          cutoff_method = 'median',
+                                          center_method = 'maxima')
+    avg_dist = tr.fields.find_avg_dist(rm_smooth, thrsh = 0.1)
+    
+    if nf < 3:
+        return np.inf
+    if np.isnan(avg_dist):
+        return np.inf
+    
+    indx = np.arange(1,nf+1)
+    err = 0
+    
+    areas = np.zeros(nf)
+    for i in range(nf):
+        areas[i] = np.sum(f==(i+1))
+
+    # Slower:    
+    # area_deviation = 0
+    # for i in range(nf):
+    #     for j in range(i+1,nf):
+    #         Ai = areas[i]
+    #         Aj = areas[j]
+    #         area_diff = (Ai - Aj)**2/(Ai*Aj)
+    #         area_deviation += area_diff
+    # Faster:
+    area_deviation = np.sum(((areas[:,None] - areas)**2/(areas[:,None]*areas))  )
+    err += area_deviation
+    
+    #def dist_dev()
+    
+    for i in indx:
+        bump = bc[i-1]
+        
+        rel = bc - bump
+        dist = np.linalg.norm(rel, axis=1)
+        sort = np.argsort(dist)
+        
+        # add relative difference in area to all other fields
+        dist_diff = (dist[sort][1:3] - avg_dist)
+        dist_deviation = np.sum(dist_diff)**2
+        err += dist_deviation
+        
+    field_mask = f > 0
+    # measure of the spike rates covered by the fields
+    # TWO WAYS TO DO THIS: measure over original rate map, or over smoothed rate map
+    #field_coverage =  np.sum(rm_smooth) / np.sum(rm_smooth[field_mask]) 
+    field_coverage =  np.sum(rate_map) / np.sum(rate_map[field_mask]) 
+    # total spike rate
+    
+    err = err*(field_coverage/len(bc))
+    return err
+    

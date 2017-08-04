@@ -533,7 +533,7 @@ def get_bump_centers(rate_map, labels, ret_index=False, indices=None, method='ma
 
 
 
-def find_avg_dist(rate_map, thrsh = 0):
+def find_avg_dist(rate_map, thrsh = 0, plot=False):
     """Uses autocorrelation and separate_fields to find average distance
     between bumps. Is dependent on high gridness to get separate bumps in
     the autocorrelation
@@ -544,10 +544,11 @@ def find_avg_dist(rate_map, thrsh = 0):
                firing rate in each bin
     
     thrsh (optional) : float, default 0
-            cutoff value for the laplacian of the autocorrelation function.
-            Should be a negative number. Gives better separation if bumps
-            are connected by "bridges" or saddles where the laplacian is
-            negative. 
+        cutoff value for the laplacian of the autocorrelation function.
+        Should be a negative number. Gives better separation if bumps are
+        connected by "bridges" or saddles where the laplacian is negative. 
+    plot (optional) : bool, default False
+        plot acorr and the separated acorr, with bump centers
     Returns
     -------
     avg_dist : float
@@ -560,24 +561,36 @@ def find_avg_dist(rate_map, thrsh = 0):
     # autocorrelate. Returns array (2x - 1) the size of rate_map
     acorr = fftcorrelate2d(rate_map,rate_map, mode = 'full', normalize = True)
 
-    #acorr[acorr<0] = 0 TODO Fix this
-    f, nf, bump_centers = separate_fields(acorr,thrsh=laplace_thrsh, center_method='maxima') 
+    #acorr[acorr<0] = 0 # TODO Fix this
+    f, nf, bump_centers = separate_fields(acorr,laplace_thrsh=thrsh,
+            center_method='maxima',cutoff_method='median') 
                                          # TODO Find a way to find valid value for 
                                          # thrsh, or remove. 
 
     bump_centers = np.array(bump_centers)
 
-    sh = np.array(rate_map.shape)
-    # find dists from center in (rate_map-)relative units (from 0 to 2)
-    distances = np.linalg.norm(bump_centers/(sh-1) - (1,1), axis = 1)
+    # find dists from center in (autocorrelation)relative units (from 0 to 1)
+    distances = np.linalg.norm(bump_centers - (0.5,0.5), axis = 1)
 
     dist_sort = np.argsort(distances)
     distances = distances[dist_sort]
 
     # use maximum 6 closest values except center value
-    avg_dist = np.average(distances[1:7])
+    avg_dist = np.median(distances[1:7])
+
+    # correct for difference in shapes
+    avg_dist *= acorr.shape[0]/rate_map.shape[0] # = 1.98
+
 
     # TODO : raise warning if too big difference between points
+    if plot:
+        import matplotlib.pyplot as plt
+        fig,[ax1,ax2] = plt.subplots(1,2)
+
+        ax1.imshow(acorr,extent  = (0,1,0,1),origin='lower')
+        ax1.scatter(*(bump_centers[:,::-1].T))
+        ax2.imshow(f,extent  = (0,1,0,1),origin='lower')
+        ax2.scatter(*(bump_centers[:,::-1].T))
     return avg_dist
 
 
@@ -783,6 +796,70 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
     return bump_centers, avg_dist, displacement, orientation
 
 
+class RandomDisplacementBounds(object):
+    """random displacement with bounds"""
+    def __init__(self, xmin, xmax, stepsize=0.5):
+        self.xmin = xmin
+        self.xmax = xmax
+        self.stepsize = stepsize
+
+    def __call__(self, x):
+        """take a random step but ensure the new position is within the bounds"""
+        i = 0
+        while True:
+
+            # this could be done in a much more clever way, but it will work for example purposes
+            xnew = x + np.random.uniform(-self.stepsize, self.stepsize, np.shape(x))
+            if np.all(xnew < self.xmax) and np.all(xnew > self.xmin):
+                break
+            i+=1
+        return xnew
+
+
+
+def optimize_sep_fields(rate_map,step = 0.04, niter=40, method = 'SLSQP', glob=True, x0 = [0.065,0.1]):
+    """Optimizes the separation of the fields by minimizing an error
+    function
+    Parameters:
+    -----------
+    rate_map :
+    method : 
+        valid methods=['L-BFGS-B', 'TNC', 'SLSQP'] 
+    x0 : list 
+        initial values for smoothing smoothing and laplace_thrsh
+
+    Returns:
+    --------
+    res : 
+        Result of the optimization. Contains smoothing and laplace_thrsh in
+        attribute res.x"""
+
+    from scipy import optimize
+    from exana.tracking.tools import separation_error_func as err_func
+
+    valid_methods = ['L-BFGS-B', 'TNC', 'SLSQP']
+    if method not in valid_methods:
+        raise ValueError('invalid method flag %s' %method)
+
+    rate_map[np.isnan(rate_map)] = 0. 
+
+    method = 'SLSQP'
+    xmin = [0.025, 0]
+    xmax = [0.1,  1]
+    bounds = [(low,high) for low,high in zip(xmin,xmax)]
+    print(bounds)
+
+    obj_func = lambda args: err_func(args[0], args[1], rate_map)
+
+    if glob:
+        take_step = RandomDisplacementBounds(xmin, xmax,stepsize=step)
+        minimizer_kwargs = dict(method=method, bounds=bounds)
+        res = optimize.basinhopping(obj_func, x0, niter=niter,
+                minimizer_kwargs=minimizer_kwargs,
+                take_step=take_step)
+    else: 
+        res = optimize.minimize(obj_func, x0, method=method, bounds = bounds, options={'disp': True})
+    return res
 
 
 
