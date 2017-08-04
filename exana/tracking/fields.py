@@ -561,7 +561,7 @@ def find_avg_dist(rate_map, thrsh = 0):
     acorr = fftcorrelate2d(rate_map,rate_map, mode = 'full', normalize = True)
 
     #acorr[acorr<0] = 0 TODO Fix this
-    f, nf, bump_centers = separate_fields(acorr,thrsh=thrsh, center_method='maxima') 
+    f, nf, bump_centers = separate_fields(acorr,thrsh=laplace_thrsh, center_method='maxima') 
                                          # TODO Find a way to find valid value for 
                                          # thrsh, or remove. 
 
