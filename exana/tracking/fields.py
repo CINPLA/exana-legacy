@@ -535,7 +535,8 @@ def get_bump_centers(rate_map, labels, ret_index=False, indices=None, method='ma
 
 def find_avg_dist(rate_map, thrsh = 0):
     """Uses autocorrelation and separate_fields to find average distance
-    between bumps.
+    between bumps. Is dependent on high gridness to get separate bumps in
+    the autocorrelation
     
     Parameters
     ----------
@@ -547,6 +548,10 @@ def find_avg_dist(rate_map, thrsh = 0):
             Should be a negative number. Gives better separation if bumps
             are connected by "bridges" or saddles where the laplacian is
             negative. 
+    Returns
+    -------
+    avg_dist : float
+        relative units from 0 to 1 of the box size
         """
 
     from scipy.ndimage import maximum_position
