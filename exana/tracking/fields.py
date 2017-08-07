@@ -456,7 +456,7 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
     fields, n_fields = ndimage.label(l)
 
     # index 0 is the background
-    indx = range(1,n_fields+1)
+    indx = np.arange(1,n_fields+1)
 
     # Use cutoff method to remove unwanted fields
     if cutoff_method != 'none':
@@ -474,21 +474,23 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
             print('cutoff_func return_values doesnt want to compare:')
             raise
 
+        if np.sum(is_field) == 0:
+            return np.zeros(rate_map.shape), 0, np.array([[],[]])
+
         for i in indx:
             if not is_field[i-1]:
                 fields[fields == i] = 0
 
         
-        # relabel fields to get new indices
         n_fields = ndimage.label(fields, output=fields)
-        indx = range(1,n_fields + 1)
+        indx = np.arange(1,n_fields + 1)
 
     # Sort by largest mean 
     sizes = ndimage.labeled_comprehension(rate_map, fields, indx, 
             np.mean, float, 0)
     size_sort = np.argsort(sizes)[::-1]
     new = np.zeros_like(fields)
-    for i in range(n_fields):
+    for i in np.arange(n_fields):
         new[fields == size_sort[i]+1] = i+1
     fields = new
 
@@ -799,25 +801,25 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
 class RandomDisplacementBounds(object):
     """random displacement with bounds"""
     def __init__(self, xmin, xmax, stepsize=0.5):
-        self.xmin = xmin
-        self.xmax = xmax
+        self.xmin = np.array(xmin)
+        self.xmax = np.array(xmax)
         self.stepsize = stepsize
 
     def __call__(self, x):
         """take a random step but ensure the new position is within the bounds"""
-        i = 0
         while True:
 
             # this could be done in a much more clever way, but it will work for example purposes
-            xnew = x + np.random.uniform(-self.stepsize, self.stepsize, np.shape(x))
+            xnew = x + (self.xmax-self.xmin)*np.random.uniform(-self.stepsize, 
+                                                               self.stepsize, np.shape(x))
             if np.all(xnew < self.xmax) and np.all(xnew > self.xmin):
                 break
-            i+=1
         return xnew
 
 
 
-def optimize_sep_fields(rate_map,step = 0.04, niter=40, method = 'SLSQP', glob=True, x0 = [0.065,0.1]):
+def optimize_sep_fields(rate_map,step = 0.04, niter=40, T = 1.0, method = 'SLSQP',
+        glob=True, x0 = [0.065,0.1],callback=None):
     """Optimizes the separation of the fields by minimizing an error
     function
     Parameters:
@@ -845,7 +847,7 @@ def optimize_sep_fields(rate_map,step = 0.04, niter=40, method = 'SLSQP', glob=T
 
     method = 'SLSQP'
     xmin = [0.025, 0]
-    xmax = [0.1,  1]
+    xmax = [0.2,  1]
     bounds = [(low,high) for low,high in zip(xmin,xmax)]
     print(bounds)
 
@@ -854,9 +856,9 @@ def optimize_sep_fields(rate_map,step = 0.04, niter=40, method = 'SLSQP', glob=T
     if glob:
         take_step = RandomDisplacementBounds(xmin, xmax,stepsize=step)
         minimizer_kwargs = dict(method=method, bounds=bounds)
-        res = optimize.basinhopping(obj_func, x0, niter=niter,
+        res = optimize.basinhopping(obj_func, x0, niter=niter, T = T, 
                 minimizer_kwargs=minimizer_kwargs,
-                take_step=take_step)
+                take_step=take_step,callback=callback)
     else: 
         res = optimize.minimize(obj_func, x0, method=method, bounds = bounds, options={'disp': True})
     return res
