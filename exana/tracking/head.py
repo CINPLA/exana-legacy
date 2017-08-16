@@ -6,7 +6,7 @@ from ..misc.tools import is_quantities
 def head_direction_rate(sptr, head_angles, t, binsize=4, n_avg_bin=4):
     """
     Calculeate firing rate at head direction in binned head angles for time t.
-    Smoothing average filter is applied on firing rate
+    Moving average filter is applied on firing rate
 
     Parameters
     ----------
@@ -26,23 +26,22 @@ def head_direction_rate(sptr, head_angles, t, binsize=4, n_avg_bin=4):
         binned angles, avg rate in corresponding bins
     """
     assert head_angles.units == pq.degrees, "Angles must be in degrees"
+    assert len(head_angles) == len(t)
     from ..misc.tools import moving_average
     # make bins around angle measurements
     spikes_in_bin, _ = np.histogram(sptr, t)
     # take out the first and every other bin
-    spikes_in_bin = spikes_in_bin
     time_in_bin = np.diff(t.magnitude)
     med_time = np.median(time_in_bin)
     # bin head_angles
-    ang_bins = np.arange(0, 360+binsize, binsize)*pq.degrees
-    ia = np.digitize(head_angles, ang_bins)
-
+    ang_bins = np.arange(0, 360 + binsize, binsize) * pq.degrees
+    ia = np.digitize(head_angles, ang_bins, right=True)
     spikes_in_ang = np.zeros(ang_bins.size)
     time_in_ang = np.zeros(ang_bins.size)
-    for n in range(head_angles.size-1):
-            if time_in_bin[n] <= med_time:
-                spikes_in_ang[ia[n]] += spikes_in_bin[n]
-                time_in_ang[ia[n]] += time_in_bin[n]
+    for n in range(len(head_angles) - 1):
+            # if time_in_bin[n] <= med_time:
+            spikes_in_ang[ia[n]] += spikes_in_bin[n]
+            time_in_ang[ia[n]] += time_in_bin[n]
     with np.errstate(divide='ignore', invalid='ignore'):
         rate_in_ang = np.divide(spikes_in_ang, time_in_ang)
     rate_in_ang = moving_average(rate_in_ang, n_avg_bin)
