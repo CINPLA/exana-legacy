@@ -2,6 +2,7 @@ import numpy as np
 import quantities as pq
 from ..misc.tools import is_quantities, normalize
 from ..misc.peakdetect import peakdetect
+from .head import head_direction
 import pdb
 import scipy.signal as sig
 
@@ -18,26 +19,26 @@ def _cut_to_same_len(*args):
 
 
 def monotonously_increasing(var):
-    return all(x < y for x, y in zip(var , var[1:]))
+    return all(x < y for x, y in zip(var, var[1:]))
 
 
 def remove_eqal_times(time, *args):
-    idxs, = np.where([x == y for x, y in zip(time , time[1:])])
+    idxs, = np.where([x == y for x, y in zip(time, time[1:])])
     out = []
     for arg in args:
-        out.append(np.delete(arg, idxs+1))
-    return np.delete(time, idxs+1), out
+        out.append(np.delete(arg, idxs + 1))
+    return np.delete(time, idxs + 1), out
 
 
 def remove_smaller_times(time, *args):
-    idxs, = np.where([x > y for x, y in zip(time , time[1:])])
+    idxs, = np.where([x > y for x, y in zip(time, time[1:])])
     out = []
     for arg in args:
-        out.append(np.delete(arg, idxs+1))
-    return np.delete(time, idxs+1), out
+        out.append(np.delete(arg, idxs + 1))
+    return np.delete(time, idxs + 1), out
 
 
-def get_processed_tracking(exdir_path):
+def get_processed_tracking(exdir_path, par, return_rad=False):
     """
     Get postion data from exdir position group
 
@@ -53,15 +54,17 @@ def get_processed_tracking(exdir_path):
     """
     import exdir
     exdir_group = exdir.File(exdir_path)
-    position_group = exdir_group['processing']['tracking']['camera_0']['Position']
-    x1, y1, t1 = tr.get_raw_position(position_group['led_0'])
-    x2, y2, t2 = tr.get_raw_position(position_group['led_1'])
-    x1, y1, t1 = fix_not_monotonous_timestamps(x1, y1, t1)
-    x2, y2, t2 = fix_not_monotonous_timestamps(x2, y2, t2)
-    x, y, t = tr.select_best_position(x1, y1, t1, x2, y2, t2)
-    ang, ang_t = tr.head_direction(x1, y1, x2, y2, t1,
-                                             return_rad=False)
-    x, y, t = tr.interp_filt_position(x, y, t, pos_fs=par['pos_fs'], f_cut=par['f_cut'])
+    processing = exdir_group['processing']
+    assert 'tracking' in processing, 'No tracking recorded.'
+    position_group = processing['tracking']['camera_0']['Position']
+    x1, y1, t1 = get_raw_position(position_group['led_0'])
+    x2, y2, t2 = get_raw_position(position_group['led_1'])
+    x1, y1, t1 = fix_nonmonotonous_timestamps(x1, y1, t1)
+    x2, y2, t2 = fix_nonmonotonous_timestamps(x2, y2, t2)
+    x, y, t = select_best_position(x1, y1, t1, x2, y2, t2)
+    ang, ang_t = head_direction(x1, y1, x2, y2, t1, return_rad=return_rad)
+    x, y, t = interp_filt_position(x, y, t, pos_fs=par['pos_fs'],
+                                      f_cut=par['f_cut'])
     return x, y, t, ang, ang_t
 
 
@@ -86,7 +89,7 @@ def get_raw_position(spot_group):
         return x, y, t
 
 
-def fix_not_monotonous_timestamps(x, y, t):
+def fix_nonmonotonous_timestamps(x, y, t):
     if not monotonously_increasing(t):
         t_unit = t.units
         x_unit = x.units
@@ -101,8 +104,12 @@ def fix_not_monotonous_timestamps(x, y, t):
             x = x[idx:]
             y = y[idx:]
         if not monotonously_increasing(t):
+            t, (x, y) = remove_smaller_times(t, x, y)
+        if not monotonously_increasing(t):
             raise ValueError('Unable to fix timestamps please revise them.')
-    return x * x_unit, y * y_unit, t * t_unit
+        return x * x_unit, y * y_unit, t * t_unit
+    else:
+        return x, y, t
 
 
 def get_tracking(postion_group):
@@ -303,7 +310,7 @@ def angle_between_vectors(v1, v2):
 
 def rescale_linear_track_2d_to_1d(x, y, end_0=[], end_1=[]):
     """ Take x, y coordinates of linear track data, rescale to 1-d.
-    
+
     Parameters
     ----------
     x : quantities.Quantity array in m
@@ -412,7 +419,7 @@ def identify_laps_on_linear_track(x,
     t = t.rescale('s')
     sampling_rate = np.median(np.diff(t))
     x = x.rescale('m')
-    
+
     if kernel == 'auto':
         filter_width = int(np.ceil(5*sampling_rate))
         kernel = np.ones(filter_width)/filter_width
@@ -426,7 +433,7 @@ def identify_laps_on_linear_track(x,
         x_max = np.max(x_filt)
     else:
         x_max = track_len
-        
+
     valid_start = [0. * pq.m,
                    val_margin*x_max]
     valid_stop = [x_max - val_margin * x_max,
