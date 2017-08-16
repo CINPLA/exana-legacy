@@ -113,9 +113,9 @@ def plot_head_direction_rate(sptr, ang_bins, rate_in_ang, projection='polar',
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection=projection)
-    binsize = ang_bins[1]-ang_bins[0]
+    binsize = ang_bins[1] - ang_bins[0]
     if projection is None:
-        ax.set_xticks(range(0, 360+60, 60))
+        ax.set_xticks(range(0, 360 + 60, 60))
         ax.set_xlim(0, 360)
     elif projection == 'polar':
         ang_bins = [math.radians(deg) for deg in ang_bins] * pq.radians
@@ -129,7 +129,7 @@ def plot_ratemap(x, y, t, sptr, binsize=0.05*pq.m, box_size=1*pq.m,
                  vmin=0, ax=None, mask_unvisited=True, convolve=True,
                  origin='upper', cmap='jet'):
     """
-    
+
 
     Parameters
     ----------
@@ -187,9 +187,9 @@ def plot_ratemap_linear_track(x, t, sptr,
     Returns
     -------
     out : axes
-    
+
     """
-    
+
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111, xlim=[0, 1], ylim=[0, 1], aspect=1)
@@ -231,7 +231,7 @@ def plot_ratemaps_linear_track(x, t, sptrs,
     Returns
     -------
     out : axes
-    
+
     """
 
     n_sptr = len(sptrs)
@@ -297,7 +297,7 @@ def plot_ratemaps_linear_track(x, t, sptrs,
         return fig
     # Todo: Empty bin on left
 
-    
+
 def plot_occupancy(x, y, t, binsize=0.05*pq.m, box_xlen=1*pq.m, box_ylen=1*pq.m,
                   vmin=0, ax=None, convolve=True,
                   origin='upper', cmap='jet'):
