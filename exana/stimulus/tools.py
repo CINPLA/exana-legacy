@@ -411,12 +411,14 @@ def compute_spontan_rate(chxs, stim_off_epoch):
 
     for chx in chxs:
         for un in chx.units:
-            if un.annotations.get('cluster_group') == "Good":
+            cluster_group = un.annotations.get('cluster_group') or 'noise'
+            if cluster_group.lower() != "noise":
+                sptr = un.spiketrains[0]
                 unit_id = un.annotations["cluster_id"]
-                trials = make_spiketrain_trials(epo=stim_off_epoch,
+                trials = make_spiketrain_trials(epoch=stim_off_epoch,
                                                 t_start=0 * pq.s,
                                                 t_stop=stim_off_epoch.durations,
-                                                unit=un)
+                                                spike_train=sptr)
                 rate = 0 * unit_rates
                 for trial in trials:
                     rate += mean_firing_rate(trial, trial.t_start, trial.t_stop)
