@@ -87,11 +87,13 @@ def make_stimulus_trials(chxs, stim_epoch):
 
     for chx in chxs:
         for un in chx.units:
-            if un.annotations.get('cluster_group') == "Good":
-                trials = make_spiketrain_trials(epo=stim_epoch,
+            cluster_group = un.annotations.get('cluster_group') or 'noise'
+            if cluster_group.lower() != "noise":
+                sptr = un.spiketrains[0]
+                trials = make_spiketrain_trials(epoch=stim_epoch,
                                                 t_start=0 * pq.s,
                                                 t_stop=stim_epoch.durations,
-                                                unit=un)
+                                                spike_train=sptr)
                 unit_id = un.annotations["cluster_id"]
                 stim_trials[chx.name][unit_id] = trials
 
@@ -148,14 +150,15 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None):
     out : list of neo.SpikeTrains
     '''
     from neo.core import SpikeTrain
-    t_start = t_start or 0 * pq.s
+    if t_start is None:
+        t_start = 0 * pq.s
     if t_start.ndim == 0:
         t_starts = t_start * np.ones(len(epoch.times))
     else:
         t_starts = t_start
         assert len(epoch.times) == len(t_starts), 'epoch.times and t_starts have different size'
-
-    t_stop = t_stop or epoch.durations
+    if t_stop is None:
+        t_stop = epoch.durations
     if t_stop.ndim == 0:
         t_stops = t_stop * np.ones(len(epoch.times))
     else:
