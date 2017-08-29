@@ -58,11 +58,14 @@ def get_processed_tracking(exdir_path, par, return_rad=False):
     assert 'tracking' in processing, 'No tracking recorded.'
     position_group = processing['tracking']['camera_0']['Position']
     x1, y1, t1 = get_raw_position(position_group['led_0'])
-    x2, y2, t2 = get_raw_position(position_group['led_1'])
     x1, y1, t1 = fix_nonmonotonous_timestamps(x1, y1, t1)
-    x2, y2, t2 = fix_nonmonotonous_timestamps(x2, y2, t2)
-    x, y, t = select_best_position(x1, y1, t1, x2, y2, t2)
-    ang, ang_t = head_direction(x1, y1, x2, y2, t1, return_rad=return_rad)
+    if 'led_1' in position_group:
+        x2, y2, t2 = get_raw_position(position_group['led_1'])
+        x2, y2, t2 = fix_nonmonotonous_timestamps(x2, y2, t2)
+        ang, ang_t = head_direction(x1, y1, x2, y2, t1, return_rad=return_rad)
+        x, y, t = select_best_position(x1, y1, t1, x2, y2, t2)
+    else:
+        x, y, t, ang, ang_t = x1, y1, t1, None, None
     x, y, t = interp_filt_position(x, y, t, pos_fs=par['pos_fs'],
                                       f_cut=par['f_cut'])
     return x, y, t, ang, ang_t
