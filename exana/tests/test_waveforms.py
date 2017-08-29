@@ -1,4 +1,4 @@
-from exana.waveforms.tools import calculate_waveform_features, cluster_waveform_features
+from exana.waveform.tools import calculate_waveform_features, cluster_waveform_features
 from neo import SpikeTrain
 import quantities as pq
 import numpy as np
