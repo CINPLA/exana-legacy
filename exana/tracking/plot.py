@@ -152,7 +152,7 @@ def plot_ratemap(x, y, t, sptr, binsize=0.05*pq.m, box_xlen=1*pq.m,
 
     rate_map = spatial_rate_map(x, y, t, sptr, binsize=binsize,
                                  mask_unvisited=mask_unvisited,
-                                 box_size=box_size,
+                                 box_xlen=box_xlen, box_ylen=box_ylen,
                                  convolve=convolve)
     ax.imshow(rate_map, interpolation='none', origin=origin,
               extent=(0, 1, 0, 1), vmin=vmin, cmap=cmap)
