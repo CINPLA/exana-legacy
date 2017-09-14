@@ -49,7 +49,7 @@ def plot_raster(trials, color="#3498db", lw=1, ax=None, marker='.', marker_size=
     t_start = trials[0].t_start.rescale(dim)
     t_stop = trials[0].t_stop.rescale(dim)
     ax.set_xlim([t_start, t_stop])
-    ax.set_xlabel("Times ["+dim+"]")
+    ax.set_xlabel("Times [{}]".format(dim))
     if ylabel is not None:
         ax.set_ylabel(ylabel)
     return ax
