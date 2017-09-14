@@ -5,7 +5,7 @@ from ..misc.plot import simpleaxis
 
 
 def plot_raster(trials, color="#3498db", lw=1, ax=None, marker='.', marker_size=10,
-                ylabel='Trials', id_start=0, ylim=None, dim='s'):
+                ylabel='Trials', id_start=0, ylim=None):
     """
     Raster plot of trials
 
@@ -27,7 +27,8 @@ def plot_raster(trials, color="#3498db", lw=1, ax=None, marker='.', marker_size=
     spikes = []
     for n, trial in enumerate(trials):  # TODO what about empty trials?
         n += id_start
-        spikes.extend(trial.times.rescale(dim).magnitude)
+        spikes.extend(trial.times.magnitude)
+        dim = trial.times.dimensionality
         trial_id.extend([n]*len(trial.times))
     if marker_size is None:
         heights = 6000./len(trials)
