@@ -19,4 +19,4 @@ def test_spatial_rate_map_1d():
         convolve=False,
         return_bins=True,
         smoothing=0.02)
-    assert rate == [2., 0]
+    assert np.array_equal(rate, [1., 0])
