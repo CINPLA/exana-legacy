@@ -28,16 +28,16 @@ def _example_rate_map(sigma=0.05*np.ones(7), spacing=0.3,
 def test_separate_fields():
     from exana.tracking.fields import separate_fields
     rm = np.zeros((6,6))
-    bin_pos = np.array([[1,1],[2,3],[1,4],[3,1],[4,4]])
-    pos = (bin_pos + 0.5)/[6,6]
+    bins = np.array([[1,1],[2,3],[1,4],[3,1],[4,4]])
+    pos = (bins + 0.5)/[6,6]
     
-    for (i,j) in pos:
+    for (i,j) in bins:
         rm[i,j] = 1
 
     f, nf, bump_centers = separate_fields(rm)
 
     # The position of a 2D bin is defined to be its center
-    for p in bin_pos:
+    for p in pos:
         assert p in bump_centers
 
     assert nf == 5
