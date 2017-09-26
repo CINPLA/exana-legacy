@@ -609,10 +609,8 @@ def separation_error_func(smoothing, lpl_thrsh, rate_map):
     # TWO WAYS TO DO THIS: measure over original rate map, or over smoothed rate map
     #field_coverage =  np.sum(rm_smooth) / np.sum(rm_smooth[field_mask]) 
     field_coverage =  np.sum(rate_map) / np.sum(rate_map[field_mask]) 
-    print(field_coverage)
     # total spike rate
     
     err = err*field_coverage/nf
-    # print(dist_deviation, area_deviation)
     return err
     

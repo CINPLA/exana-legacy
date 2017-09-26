@@ -849,7 +849,6 @@ def optimize_sep_fields(rate_map,step = 0.04, niter=40, T = 1.0, method = 'SLSQP
     xmin = [0.025, 0]
     xmax = [0.2,  1]
     bounds = [(low,high) for low,high in zip(xmin,xmax)]
-    print(bounds)
 
     obj_func = lambda args: err_func(args[0], args[1], rate_map)
 
