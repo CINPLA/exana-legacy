@@ -740,13 +740,13 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
     ...     rate_map[i,j] = 1                                                                 
     ... 
     >>> calculate_grid_geometry(rate_map)
-    (array([[ 0.5 ,  0.  ],
-           [ 0.  ,  0.25],
-           [ 1.  ,  0.25],
-           [ 0.5 ,  0.5 ],
-           [ 0.  ,  0.75],
-           [ 1.  ,  0.75],
-           [ 0.5 ,  1.  ]]), 0.53934466291663163, 0.0, 26.565051177077976)
+    (array([[ 0.5,  0.9],
+           [ 0.9,  0.7],
+           [ 0.1,  0.7],
+           [ 0.5,  0.5],
+           [ 0.9,  0.3],
+           [ 0.1,  0.3],
+           [ 0.5,  0.1]]) * m, 0.44721359549995793, 0.0, 26.565051177077983)
 >>> 
 
 
@@ -780,11 +780,11 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
         y=np.linspace(0,1,sh[1]+1)
         x,y = np.meshgrid(x,y)
         ax = plt.gca()
-        print('nfieilds',nfields)
+        print('nfields: ',nfields)
         plt.pcolormesh(x,y, fields)
 
-    # normalize to (0,1) and switch from row-column to x-y
-    bump_centers = (np.array(bump_centers)/(sh-1))[:,::-1]
+    # switch from row-column to x-y
+    bump_centers = bump_centers[:,::-1]
 
     thrsh = kwargs.pop('thrsh', None)
     if thrsh:
