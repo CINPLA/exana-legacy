@@ -101,7 +101,7 @@ def plot_psth(sptr=None, epoch=None, t_start=None, t_stop=None, trials=None,
               output='counts', binsize=None, bins=100, fig=None,
               color='b', title='plot_psth', stim_color='b', edgecolor='k',
               alpha=.2, label='stim on', legend_loc=1, legend_style='patch',
-              axs=None, hist_ylabel=True, rast_ylabel='trials', dim='s',
+              axs=None, hist_ylabel=True, rast_ylabel='trials',
               ylim=None, offset=0 * pq.s):
     """
     Visualize clustering on amplitude at detection point
@@ -136,8 +136,10 @@ def plot_psth(sptr=None, epoch=None, t_start=None, t_stop=None, trials=None,
         t_stop = t_stop or epoch.durations[0]
         trials = make_spiketrain_trials(epoch=epoch, t_start=t_start, t_stop=t_stop,
                                         spike_train=sptr)
+        dim = sptr.times.dimensionality
         stim_duration = epoch.durations.rescale(dim).magnitude.max()
     else:
+        dim = trials[0].times.dimensionality
         if legend_style == 'patch':
             if epoch is not None:
                 stim_duration = epoch.durations.rescale(dim).magnitude.max()
@@ -150,10 +152,10 @@ def plot_psth(sptr=None, epoch=None, t_start=None, t_stop=None, trials=None,
 
     plot_spike_histogram(trials, color=color, ax=ax, output=output,
                          binsize=binsize, bins=bins, edgecolor=edgecolor,
-                         ylabel=hist_ylabel, dim=dim)
+                         ylabel=hist_ylabel)
     if ylim is not None:
         ax.set_ylim(ylim)
-    plot_raster(trials, color=color, ax=ax2, ylabel=rast_ylabel, dim=dim)
+    plot_raster(trials, color=color, ax=ax2, ylabel=rast_ylabel)
     if legend_style == 'patch':
         fill_stop = stim_duration
         import matplotlib.patches as mpatches
