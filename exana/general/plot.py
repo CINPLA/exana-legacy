@@ -25,10 +25,10 @@ def plot_raster(trials, color="#3498db", lw=1, ax=None, marker='.', marker_size=
         fig, ax = plt.subplots()
     trial_id = []
     spikes = []
+    dim = trials[0].times.dimensionality
     for n, trial in enumerate(trials):  # TODO what about empty trials?
         n += id_start
         spikes.extend(trial.times.magnitude)
-        dim = trial.times.dimensionality
         trial_id.extend([n]*len(trial.times))
     if marker_size is None:
         heights = 6000./len(trials)

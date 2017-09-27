@@ -5,8 +5,7 @@ from ..misc.plot import simpleaxis
 
 
 def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=100,
-                         output='counts', edgecolor='k', alpha=1., ylabel=True,
-                         dim='s'):
+                         output='counts', edgecolor='k', alpha=1., ylabel=True):
     """
     Raster plot of trials
 
@@ -27,6 +26,7 @@ def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=100,
     """
     assert isinstance(ylabel, bool)
     from elephant.statistics import time_histogram
+    dim = trials[0].times.dimensionality
     t_start = trials[0].t_start.rescale(dim)
     t_stop = trials[0].t_stop.rescale(dim)
     if binsize is None:
