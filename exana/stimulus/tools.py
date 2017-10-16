@@ -10,6 +10,7 @@ from ..misc.tools import find_first_peak, is_quantities
 def _rescale_orients(trials, unit=pq.deg):
     """
     Rescales all orient annotations to the same unit
+
     Parameters
     ----------
     trials : neo.SpikeTrains
@@ -29,9 +30,11 @@ def _rescale_orients(trials, unit=pq.deg):
 def _convert_quantity_scalar_to_string(value):
     """
     converts quantity scalar to string
+
     Parameters
     ----------
     value : quantity scalar
+
     Returns
     -------
     out : str
@@ -43,10 +46,12 @@ def _convert_quantity_scalar_to_string(value):
 def _convert_string_to_quantity_scalar(value):
     """
     converts string to quantity scalar
+
     Parameters
     ----------
     value : str
         magnitude and unit are assumed to be separated with space.
+
     Returns
     -------
     out : quantity scalar
@@ -58,6 +63,7 @@ def _convert_string_to_quantity_scalar(value):
 def add_orientation_to_trials(trials, orients):
     """
     Adds annotation 'orient' to trials
+
     Parameters
     ----------
     trials : list of neo.SpikeTrains
@@ -72,11 +78,14 @@ def add_orientation_to_trials(trials, orients):
 def make_stimulus_trials(chxs, stim_epoch):
     '''
     makes stimulus trials for every units (good) in each channel
+
+    Parameters
     ----------
     chxs : list
         list of neo.core.ChannelIndex
     stim_epoch : neo.core.Epoch
         stimulus epoch
+
     Returns
     -------
     out : defaultdict(dict)
@@ -108,6 +117,7 @@ def make_stimulus_trials(chxs, stim_epoch):
 def make_orientation_trials(trials, unit=pq.deg):
     """
     Makes trials based on stimulus orientation
+
     Parameters
     ----------
     trials : neo.SpikeTrains
@@ -116,6 +126,7 @@ def make_orientation_trials(trials, unit=pq.deg):
     unit : Quantity, optional
         scaling unit (default is degree) used for orients
         used as keys in dictionary.
+
     Returns
     -------
     trials : collections.OrderedDict
@@ -137,6 +148,7 @@ def make_orientation_trials(trials, unit=pq.deg):
 def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None):
     '''
     Makes trials based on an Epoch and given temporal bound
+
     Parameters
     ----------
     spike_train : neo.SpikeTrain, neo.Unit, numpy.array, quantities.Quantity
@@ -145,6 +157,7 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None):
         time before epochs, default is 0 s
     t_stop : quantities.Quantity
         time after epochs default is duration of epoch
+
     Returns
     -------
     out : list of neo.SpikeTrains
@@ -202,6 +215,7 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None):
 def make_analog_trials(ana, epoch, t_start, t_stop):
     '''
     Makes trials based on an Epoch and given temporal bound
+
     Parameters
     ----------
     epoch : neo.Epoch
@@ -210,6 +224,7 @@ def make_analog_trials(ana, epoch, t_start, t_stop):
     t_stop : quantities.Quantity
         time after epochs
     ana : neo.AnalogSignal
+
     Returns
     -------
     out : list of neo.AnalogSignal
@@ -234,11 +249,14 @@ def make_analog_trials(ana, epoch, t_start, t_stop):
 def get_epoch(epochs, epoch_type):
     '''
     returns epoch with matching name
+
+    Parameters
     ----------
     epochs : list
         list of neo.core.Epoch
     epoch_type : str
         epoch type (name)
+
     Returns
     -------
     out : neo.core.Epoch
@@ -253,12 +271,14 @@ def get_epoch(epochs, epoch_type):
 def make_stimulus_off_epoch(epo, include_boundary=False):
     '''
     Creates a neo.Epoch of off periods.
+
     Parameters
     ----------
     epo : neo.Epoch
         stimulus epoch
     include_boundary :
         add 0 to be first off period
+
     Returns
     ------
     out : neo.Epoch
@@ -282,9 +302,11 @@ def epoch_overview(epo, period, expected_num_epochs=None):
     '''
     Makes a new Epoch with start and stop time as first and last event in
     a burst of epochs, bursts are separated by > period + stim duration*2
+
     Parameters
     ----------
     epo : neo.Epoch
+    
     Returns
     -------
     out : neo.Epoch
@@ -309,10 +331,12 @@ def epoch_overview(epo, period, expected_num_epochs=None):
 def print_epo(epo, N=20):
     '''
     Print the N first epochs
+
     Parameters
     ----------
     epo : neo.Epoch
     N : number of epochs to print
+
     Returns
     ------
     prints : print of epoch
@@ -334,11 +358,14 @@ def print_epo(epo, N=20):
 def wrap_angle(angle, wrap_range=360.):
     '''
     wraps angle in to the interval [0, wrap_range]
+
+    Parameters
     ----------
     angle : numpy.array/float
         input array/float
     wrap_range : float
         wrap range (eg. 360 or 2pi)
+
     Returns
     -------
     out : numpy.array/float
@@ -351,12 +378,14 @@ def compute_osi(rates, orients):
     # TODO: write tests
     '''
     calculates orientation selectivity index
+
     Parameters
     ----------
     rates : quantity array
         array of mean firing rates
     orients : quantity array
         array of orientations
+
     Returns
     -------
     out : quantity scalar
@@ -392,12 +421,14 @@ def compute_spontan_rate(chxs, stim_off_epoch):
     # TODO: test
     '''
     Calculates spontaneous firing rate
+
     Parameters
     ----------
     chxs : list
         list of neo.core.ChannelIndex
     stim_off_epoch : neo.core.Epoch
         stimulus epoch
+
     Returns
     -------
     out : defaultdict(dict)
@@ -433,10 +464,12 @@ def compute_orientation_tuning(orient_trials):
                                       _convert_string_to_quantity_scalar)
     '''
     Calculates the mean firing rate for each orientation
+
     Parameters
     ----------
     trials : collections.OrderedDict
         OrderedDict with orients as keys and trials as values.
+
     Returns
     -------
     rates : quantity array

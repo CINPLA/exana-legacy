@@ -4,46 +4,95 @@ import quantities as pq
 from ..misc.plot import simpleaxis
 
 
-def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=100,
-                         output='counts', edgecolor='k', alpha=1., ylabel=True):
+def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=None,
+                         output='counts', edgecolor='k', alpha=1., ylabel=None,
+                         nbins=None):
     """
     Raster plot of trials
 
     Parameters
     ----------
     trials : list of neo.SpikeTrains
-    color : color of histogram
+    color : str
+        Color of histogram.
+    edgecolor : str
+        Color of histogram edges.
     ax : matplotlib axes
-    output : accepts 'counts' or 'rate',
-    binsize : binsize of spike rate histogram, default None, if not None then
-              bins are overridden
-    bins : number of bins, defaults to 100 if binsize is None
-    ylabel : bool
+    output : str
+        Accepts 'counts', 'rate' or 'mean'.
+    binsize :
+        Binsize of spike rate histogram, default None, if not None then
+        bins are overridden.
+    nbins : int
+        Number of bins, defaults to 100 if binsize is None.
+    ylabel : str
+        The ylabel of the plot, if None defaults to output type.
+
+    Examples
+    --------
+    >>> import neo
+    >>> from numpy.random import rand
+    >>> from exana.stimulus import make_spiketrain_trials
+    >>> spike_train = neo.SpikeTrain(rand(1000) * 10, t_stop=10, units='s')
+    >>> epoch = neo.Epoch(times=np.arange(0, 10, 1) * pq.s,
+    ...                   durations=[.5] * 10 * pq.s)
+    >>> trials = make_spiketrain_trials(spike_train, epoch)
+    >>> ax = plot_spike_histogram(trials, color='r', edgecolor='b',
+    ...                           binsize=1 * pq.ms, output='rate', alpha=.5)
+
+    .. plot::
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import quantities as pq
+        import neo
+        from numpy.random import rand
+        from exana.stimulus import make_spiketrain_trials
+        from exana.statistics import plot_spike_histogram
+        spike_train = neo.SpikeTrain(rand(1000) * 10, t_stop=10, units='s')
+        epoch = neo.Epoch(times=np.arange(0, 10, 1) * pq.s, durations=[.5] * 10 * pq.s)
+        trials = make_spiketrain_trials(spike_train, epoch)
+        ax = plot_spike_histogram(trials, color='r', edgecolor='b', binsize=1 * pq.ms, output='rate', alpha=.5)
+        plt.show()
 
     Returns
     -------
     out : axes
     """
-    assert isinstance(ylabel, bool)
+    ### TODO
+    if bins is not None:
+        assert isinstance(bins, int)
+        warnins.warn('The variable "bins" is deprecated, use nbins in stead.')
+        nbins = bins
+    ###
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
     from elephant.statistics import time_histogram
     dim = trials[0].times.dimensionality
     t_start = trials[0].t_start.rescale(dim)
     t_stop = trials[0].t_stop.rescale(dim)
     if binsize is None:
-        binsize = (abs(t_start)+abs(t_stop))/float(bins)
+        if nbins is None:
+            nbins = 100
+        binsize = (abs(t_start)+abs(t_stop))/float(nbins)
     else:
         binsize = binsize.rescale(dim)
     time_hist = time_histogram(trials, binsize, t_start=t_start,
                                t_stop=t_stop, output=output, binary=False)
     bs = np.arange(t_start.magnitude, t_stop.magnitude, binsize.magnitude)
-    if output == 'counts' and ylabel:
-        ax.set_ylabel('count')
-    elif output == 'rate':
-        time_hist = time_hist.rescale('Hz')
-        if ylabel:
-            ax.set_ylabel('rate [%s]' % time_hist.dimensionality)
-    elif output == 'mean' and ylabel:
-        ax.set_ylabel('mean count')
+    if ylabel is None:
+        if output == 'counts':
+            ax.set_ylabel('count')
+        elif output == 'rate':
+            time_hist = time_hist.rescale('Hz')
+            if ylabel:
+                ax.set_ylabel('rate [%s]' % time_hist.dimensionality)
+        elif output == 'mean':
+            ax.set_ylabel('mean count')
+    elif isinstance(ylabel, str):
+        ax.set_ylabel(ylabel)
+    else:
+        raise TypeError('ylabel must be str not "' + str(type(ylabel)) + '"')
     ax.bar(bs[0:len(time_hist)], time_hist.magnitude, width=bs[1]-bs[0],
            edgecolor=edgecolor, facecolor=color, alpha=alpha)
     return ax

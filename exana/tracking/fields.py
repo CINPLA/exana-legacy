@@ -419,7 +419,7 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
     cutoff_method (optional) : string or function
         function to exclude small fields. If local field value of function
         is lower than global function value, the field is excluded. Valid
-        string_options = ['median', 'mean','none']. 
+        string_options = ['median', 'mean','none'].
     index : bool, default False
         return bump center values as index or xy-pos
 
@@ -431,11 +431,11 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
         field (sum of all field values). 0 elsewhere.
     n_field : int
         field count
-    bump_centers : (n_field x 2) np ndarray 
+    bump_centers : (n_field x 2) np ndarray
         Coordinates of field centers
     """
 
-    
+
     cutoff_functions = {'mean':np.mean, 'median':np.median, 'none':None}
     if not callable(cutoff_method):
         try:
@@ -466,7 +466,7 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
             print('Unexpected error, cutoff_func doesnt like the input:')
             raise
 
-        field_values = ndimage.labeled_comprehension(rate_map, fields, indx, 
+        field_values = ndimage.labeled_comprehension(rate_map, fields, indx,
                 cutoff_func, float, 0)
         try:
             is_field = field_values >= total_value
@@ -481,12 +481,12 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
             if not is_field[i-1]:
                 fields[fields == i] = 0
 
-        
+
         n_fields = ndimage.label(fields, output=fields)
         indx = np.arange(1,n_fields + 1)
 
-    # Sort by largest mean 
-    sizes = ndimage.labeled_comprehension(rate_map, fields, indx, 
+    # Sort by largest mean
+    sizes = ndimage.labeled_comprehension(rate_map, fields, indx,
             np.mean, float, 0)
     size_sort = np.argsort(sizes)[::-1]
     new = np.zeros_like(fields)
@@ -503,7 +503,7 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
 def get_bump_centers(rate_map, labels, ret_index=False, indices=None, method='maxima',
         units=1*pq.m):
     """Finds center of fields at labels."""
-    
+
     from scipy import ndimage
 
     if method not in ['maxima','center_of_mass','gaussian_fit']:
@@ -525,12 +525,12 @@ def get_bump_centers(rate_map, labels, ret_index=False, indices=None, method='ma
             r[labels != i] = 0
             popt = fit_gauss_asym(r, return_data=False)
             # TODO Find out which axis is x and which is y
-            bc[i-1] = (popt[2],popt[1]) 
+            bc[i-1] = (popt[2],popt[1])
         if ret_index:
             msg = 'ret_index not implemented for gaussian fit'
             raise NotImplementedError(msg)
     if not ret_index and not method=='gaussian_fit':
-        bc = (bc + np.array((0.5,0.5)))/rate_map.shape 
+        bc = (bc + np.array((0.5,0.5)))/rate_map.shape
     return np.array(bc)*units
 
 
@@ -539,16 +539,16 @@ def find_avg_dist(rate_map, thrsh = 0, plot=False):
     """Uses autocorrelation and separate_fields to find average distance
     between bumps. Is dependent on high gridness to get separate bumps in
     the autocorrelation
-    
+
     Parameters
     ----------
     rate_map : np 2d array
                firing rate in each bin
-    
+
     thrsh (optional) : float, default 0
         cutoff value for the laplacian of the autocorrelation function.
         Should be a negative number. Gives better separation if bumps are
-        connected by "bridges" or saddles where the laplacian is negative. 
+        connected by "bridges" or saddles where the laplacian is negative.
     plot (optional) : bool, default False
         plot acorr and the separated acorr, with bump centers
     Returns
@@ -565,9 +565,9 @@ def find_avg_dist(rate_map, thrsh = 0, plot=False):
 
     #acorr[acorr<0] = 0 # TODO Fix this
     f, nf, bump_centers = separate_fields(acorr,laplace_thrsh=thrsh,
-            center_method='maxima',cutoff_method='median') 
-                                         # TODO Find a way to find valid value for 
-                                         # thrsh, or remove. 
+            center_method='maxima',cutoff_method='median')
+                                         # TODO Find a way to find valid value for
+                                         # thrsh, or remove.
 
     bump_centers = np.array(bump_centers)
 
@@ -649,9 +649,9 @@ def fit_hex(bump_centers, avg_dist=None, plot_bumps = False, method='best'):
         closest = others[rel_sort][:6]
         relpos = relpos[rel_sort][:6]
     elif method == 'best':
-        # get 2 bumps such that /sum_{i\neqj}(\abs{r_i-r_j}-avg_ist)^2 is minimized 
+        # get 2 bumps such that /sum_{i\neqj}(\abs{r_i-r_j}-avg_ist)^2 is minimized
         squares = 1e32*np.ones((others.shape[0], others.shape[0]))
-        
+
         for i in range(len(relpos)):
             for j in range(i,len(relpos)):
                 rel1 = (reldist[i] - avg_dist)**2
@@ -683,7 +683,7 @@ def fit_hex(bump_centers, avg_dist=None, plot_bumps = False, method='best'):
         dx = xmax-xmin; dy = ymax - ymin
 
         closest = closest[a_sort]
-        
+
         edges = [center_bump] if method == 'best' else []
         edges += [c for c in closest]
         edges = np.array(edges)*(dx,dy) + (xmin, ymin)
@@ -700,45 +700,40 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
     Parameters
     ----------
     rate_map : np 2d array
-               firing rate in each bin
+        firing rate in each bin
     plot_fields : if True, plots the field labels with field centers to the
-                  current matplotlib ax. Default False
+        current matplotlib ax. Default False
+    thrsh : float, default 0
+        see find_avg_dist()
+    center_method : string, valid options: ['maxima', 'center_of_mass']
+        default: 'center_of_mass'
+        see separate_fields()
+    method : string, valid options: ['closest', 'best']
+        see fit_hex()
 
     Returns
     -------
     bump_centers : 2d np.array
-                   x,y positions of bump centers
+        x,y positions of bump centers
     avg_dist : float
-               average spacing between bumps, \in [0,1]
+        average spacing between bumps, \in [0,1]
     displacement : float
-                   distance of bump closest to the center
+        distance of bump closest to the center
     orientation : float
-                  orientation of hexagon (in degrees)
-
-
-    Other parameters
-    ----------------
-    thrsh : float, default 0
-            see find_avg_dist()
-    center_method : string, valid options: ['maxima', 'center_of_mass']
-            default: 'center_of_mass'
-            see separate_fields()
-    method : string, valid options: ['closest', 'best']
-            see fit_hex()
-
+        orientation of hexagon (in degrees)
 
     Examples
     --------
     >>> import numpy as np
     >>> rate_map = np.zeros((5,5))
     >>> pos = np.array([  [0,2],
-    ...                [1,0],[1,4], 
-    ...                   [2,2], 
+    ...                [1,0],[1,4],
+    ...                   [2,2],
     ...                [3,0],[3,4],
     ...                   [4,2]])
     >>> for(i,j) in pos:
-    ...     rate_map[i,j] = 1                                                                 
-    ... 
+    ...     rate_map[i,j] = 1
+    ...
     >>> calculate_grid_geometry(rate_map)
     (array([[ 0.5,  0.9],
            [ 0.9,  0.7],
@@ -747,9 +742,6 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
            [ 0.9,  0.3],
            [ 0.1,  0.3],
            [ 0.5,  0.1]]) * m, 0.44721359549995793, 0.0, 26.565051177077983)
->>> 
-
-
     """
 
     from scipy.ndimage import mean, center_of_mass
@@ -770,7 +762,7 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
         msg = 'couldnt find bump centers, returning None'
         warnings.warn(msg, RuntimeWarning, stacklevel=2)
         return None,None,None,None,
-              
+
     sh = np.array(rate_map.shape)
 
     if plot_fields:
@@ -810,7 +802,7 @@ class RandomDisplacementBounds(object):
         while True:
 
             # this could be done in a much more clever way, but it will work for example purposes
-            xnew = x + (self.xmax-self.xmin)*np.random.uniform(-self.stepsize, 
+            xnew = x + (self.xmax-self.xmin)*np.random.uniform(-self.stepsize,
                                                                self.stepsize, np.shape(x))
             if np.all(xnew < self.xmax) and np.all(xnew > self.xmin):
                 break
@@ -822,17 +814,18 @@ def optimize_sep_fields(rate_map,step = 0.04, niter=40, T = 1.0, method = 'SLSQP
         glob=True, x0 = [0.065,0.1],callback=None):
     """Optimizes the separation of the fields by minimizing an error
     function
-    Parameters:
-    -----------
+
+    Parameters
+    ----------
     rate_map :
-    method : 
-        valid methods=['L-BFGS-B', 'TNC', 'SLSQP'] 
-    x0 : list 
+    method :
+        valid methods=['L-BFGS-B', 'TNC', 'SLSQP']
+    x0 : list
         initial values for smoothing smoothing and laplace_thrsh
 
-    Returns:
+    Returns
     --------
-    res : 
+    res :
         Result of the optimization. Contains smoothing and laplace_thrsh in
         attribute res.x"""
 
@@ -843,7 +836,7 @@ def optimize_sep_fields(rate_map,step = 0.04, niter=40, T = 1.0, method = 'SLSQP
     if method not in valid_methods:
         raise ValueError('invalid method flag %s' %method)
 
-    rate_map[np.isnan(rate_map)] = 0. 
+    rate_map[np.isnan(rate_map)] = 0.
 
     method = 'SLSQP'
     xmin = [0.025, 0]
@@ -855,10 +848,10 @@ def optimize_sep_fields(rate_map,step = 0.04, niter=40, T = 1.0, method = 'SLSQP
     if glob:
         take_step = RandomDisplacementBounds(xmin, xmax,stepsize=step)
         minimizer_kwargs = dict(method=method, bounds=bounds)
-        res = optimize.basinhopping(obj_func, x0, niter=niter, T = T, 
+        res = optimize.basinhopping(obj_func, x0, niter=niter, T = T,
                 minimizer_kwargs=minimizer_kwargs,
                 take_step=take_step,callback=callback)
-    else: 
+    else:
         res = optimize.minimize(obj_func, x0, method=method, bounds = bounds, options={'disp': True})
     return res
 

@@ -147,7 +147,7 @@ def prob_dist(x, y, bins):
     '''
     Calculate a probability distribution for animal positions in an arena.
 
-    Parametersp
+    Parameters
     ----------
     x : quantities.Quantity array in m
     y : quantities.Quantity array in m
@@ -168,7 +168,7 @@ def prob_dist_1d(x, bins):
     '''
     Calculate a probability distribution for animal positions in an arena.
 
-    Parametersp
+    Parameters
     ----------
     x : quantities.Quantity array in m
     bins : quantities.Quantity array in m
@@ -213,7 +213,7 @@ def occupancy_map(x, y, t,
     convolve : bool
         convolve the rate map with a 2D Gaussian kernel
 
-    
+
     Returns
     -------
     occupancy_map : numpy.ndarray

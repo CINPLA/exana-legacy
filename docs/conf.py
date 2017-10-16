@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 # exana documentation build configuration file, created by
 # sphinx-quickstart on Fri Feb  3 09:52:17 2017.
@@ -19,9 +19,9 @@
 
 import os
 import re
-import exana
 import sys
 import matplotlib
+import exana
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../exana'))
 sys.path.insert(0, os.path.abspath('../'))

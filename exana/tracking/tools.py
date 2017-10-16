@@ -450,11 +450,11 @@ def identify_laps_on_linear_track(x,
 
 def gaussian2D_asym(pos, amplitude, xc, yc, sigma_x, sigma_y, theta):
     x,y = pos
-    
+
     a = (np.cos(theta)**2)/(2*sigma_x**2) + (np.sin(theta)**2)/(2*sigma_y**2)
     b = -(np.sin(2*theta))/(4*sigma_x**2) + (np.sin(2*theta))/(4*sigma_y**2)
     c = (np.sin(theta)**2)/(2*sigma_x**2) + (np.cos(theta)**2)/(2*sigma_y**2)
-    g = amplitude*np.exp( - (a*((x-xc)**2) + 2*b*(x-xc)*(y-yc) 
+    g = amplitude*np.exp( - (a*((x-xc)**2) + 2*b*(x-xc)*(y-yc)
                             + c*((y-yc)**2)))
     return g.ravel()
 
@@ -465,16 +465,16 @@ def fit_gauss_asym(data, p0 = None, return_data=True):
     angle. If no guess parameters, initializes with a thin gauss bell
     centered at the data maxima
 
-    Parameters:
+    Parameters
     -----------
     data        : 2D np array
     p0 (optional): arraylike
                   initial parameters [amplitude,x_center,y_center,sigma_x, sigma_y,angle]
     return_data : bool
 
-    
 
-    Returns:
+
+    Returns
     --------
     params      : tuple of params: (amp,xc,yc,sigmax, sigmay, angle)
     (if return_data) data_fitted : 2D np array
@@ -492,12 +492,12 @@ def fit_gauss_asym(data, p0 = None, return_data=True):
 
     if p0 is None:
         # initial guesses, use small gaussian at maxima as initial guess
-        ia =     np.max(data)                                # amplitude 
+        ia =     np.max(data)                                # amplitude
         index = np.unravel_index(np.argmax(data), (sx, sy))  # center
         ix, iy = x[index], y[index]
-        isig =   0.01 
+        isig =   0.01
         iang = 0
-        
+
         p0 = (ia, ix, iy, isig, isig, iang)
 
     popt, pcov = curve_fit(gaussian2D_asym, (x, y), data.ravel(), p0=p0)
@@ -515,22 +515,24 @@ def fit_gauss_asym(data, p0 = None, return_data=True):
 def separation_error_func(smoothing, lpl_thrsh, rate_map):
     """
     Gives a measure of how well the smoothing and laplace-threshold factors
-    separates a rate_map into hexagonal fields. 
+    separates a rate_map into hexagonal fields.
     Measures the deviation of the distance from each bump to its two
     closest neighbors from the average distance as gotten from
     tr.fields.find_avg_dist, and the relative difference in area of each of
-    the fields.  
-    Parameters:
+    the fields.
+    
+    Parameters
     -----------
         smoothing : float
             size of the smoothing kernel relative to the box
         lpl_thrsh : float
-            
+
     laplace_thrsh : float
         value of laplacian to separate fields by relative to the minima.
         see exana.tracking.fields.separate_fields
 
-    Returns:
+    Returns
+    -------
         err : float
             0 if all fields exact same size and distance from two closest
             neighbors
@@ -542,7 +544,7 @@ def separation_error_func(smoothing, lpl_thrsh, rate_map):
 
     import exana.tracking as tr
 
-    rate_map[np.isnan(rate_map)] = 0. 
+    rate_map[np.isnan(rate_map)] = 0.
 
     csize = rate_map.shape[0] * smoothing
     kernel = Gaussian2DKernel(csize)
@@ -553,15 +555,15 @@ def separation_error_func(smoothing, lpl_thrsh, rate_map):
                                             center_method = 'maxima')
 
     avg_dist = tr.fields.find_avg_dist(rm_smooth, thrsh = 0.1)
-    
+
     if nf < 3:
         return np.inf
     if np.isnan(avg_dist):
         return np.inf
-    
+
     indx = np.arange(1,nf+1)
     err = 0
-    
+
 
     # Slower:
     # areas = np.zeros(nf)
@@ -570,7 +572,7 @@ def separation_error_func(smoothing, lpl_thrsh, rate_map):
     # Faster: (~ 2x, depends on indx.size, bigger loop = more gain )
     areas = np.sum(f.ravel() == indx[:,None], axis = 1)
 
-    # Slower:    
+    # Slower:
     # area_deviation = 0
     # for i in range(nf):
     #     for j in range(i+1,nf):
@@ -581,16 +583,16 @@ def separation_error_func(smoothing, lpl_thrsh, rate_map):
     # Faster: (~ 4x)
     area_deviation = np.sum(((areas[:,None] - areas)**2/(areas[:,None] * areas)))
     err += area_deviation
-    
+
     # Slower:
     # dist_deviations = np.zeros(nf)
     # for i in indx:
     #     bump = bc[i-1]
-        
+
     #     rel = bc - bump
     #     dist = np.linalg.norm(rel, axis=1)
     #     sort = np.argsort(dist)
-        
+
     #     # add relative difference in area to all other fields
     #     dist_diff = (dist[sort][1:3] - avg_dist)
     #     dist_deviations[i-1] = np.sum(dist_diff**2)/2
@@ -602,15 +604,14 @@ def separation_error_func(smoothing, lpl_thrsh, rate_map):
     #err += dist_deviation
     # oneliner forzelulz
     # err += np.sum(np.sum((np.sort(np.linalg.norm(bc[:,None,:] - bc, axis = -1))[:,1:3] - avg)**2, axis = 1)**2)
-        
+
     field_mask = f > 0
 
     # measure of the spike rates covered by the fields
     # TWO WAYS TO DO THIS: measure over original rate map, or over smoothed rate map
-    #field_coverage =  np.sum(rm_smooth) / np.sum(rm_smooth[field_mask]) 
-    field_coverage =  np.sum(rate_map) / np.sum(rate_map[field_mask]) 
+    #field_coverage =  np.sum(rm_smooth) / np.sum(rm_smooth[field_mask])
+    field_coverage =  np.sum(rate_map) / np.sum(rate_map[field_mask])
     # total spike rate
-    
+
     err = err*field_coverage/nf
     return err
-    
