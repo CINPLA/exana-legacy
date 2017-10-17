@@ -12,6 +12,10 @@ before_script:
   - pip install git+https://github.com/python-quantities/python-quantities.git
   - pip install pytest coverage codecov elephant pandas
   - python setup.py install
+  # configure a headless display to test plot generation
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
 script:
   - coverage run --source exana -m py.test -s --doctest-modules --ignore setup.py
   - coverage report
