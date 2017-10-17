@@ -95,7 +95,7 @@ def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=None,
         ax.set_ylabel(ylabel)
     else:
         raise TypeError('ylabel must be str not "' + str(type(ylabel)) + '"')
-    ax.bar(bs[0:len(time_hist)], time_hist.magnitude, width=bs[1]-bs[0],
+    ax.bar(bs[:len(time_hist)], time_hist.magnitude.flatten(), width=bs[1]-bs[0],
            edgecolor=edgecolor, facecolor=color, alpha=alpha)
     return ax
 
