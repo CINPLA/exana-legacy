@@ -628,7 +628,7 @@ def correlogram(t1, t2=None, binsize=.001, limit=.02, auto=False,
         # possible numerical issue here because 0.0 may fall at a bin edge.
         c_temp, bins_temp = np.histogram([0.], bins=bins)
         bin_containing_zero = np.nonzero(c_temp)[0][0]
-        count[bin_containing_zero] -= len(t1)
+        count[bin_containing_zero] = 0#-= len(t1)
 
     # Finally compensate for the swapping of t1 and t2
     if swap_args:

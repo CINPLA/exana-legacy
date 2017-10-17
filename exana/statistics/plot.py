@@ -159,11 +159,12 @@ def plot_isi_hist(sptr, alpha=1, ax=None, binsize=2*pq.ms,
     return ax
 
 
-def plot_xcorr(spike_trains, colors=None, edgecolors=None,
-               fig=None, density=True, alpha=1., gs=None, binsize=1*pq.ms,
-               time_limit=1*pq.s):
+def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
+               density=True, alpha=1., gs=None, binsize=1*pq.ms,
+               time_limit=1*pq.s, split_colors=True, xcolor='k',
+               xedgecolor='k'):
     """
-    Bar plot of crosscorrelation of two spiketrians
+    Bar plot of crosscorrelation of multiple spiketrians
 
     Parameters
     ----------
@@ -180,6 +181,13 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None,
     time_limit : Quantity
         end time of histogram x limit, default 100 ms
     gs : instance of matplotlib.gridspec
+    split_colors : bool
+        if True splits crosscorrelations into colors from respective
+        autocorrelations
+    xcolor : str
+        color of crosscorrelations
+    xedgecolor : str
+        edgecolor of crosscorrelations
 
     Examples
     --------
@@ -222,15 +230,15 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None,
     import matplotlib.gridspec as gridspec
     dim = spike_trains[0].times.dimensionality
     binsize = binsize.rescale(dim).magnitude
-    time_limit = time_limit.rescale('s').magnitude
+    time_limit = time_limit.rescale(dim).magnitude
     if colors is None:
         from matplotlib.pyplot import cm
         colors = cm.rainbow(np.linspace(0, 1, len(spike_trains)))
-    elif isinstance(colors, str):
+    elif not isinstance(colors, list):
         colors = [colors] * len(spike_trains)
     if edgecolors is None:
         edgecolors = colors
-    elif isinstance(edgecolors, str):
+    elif not isinstance(edgecolors, list):
         edgecolors = [edgecolors] * len(spike_trains)
 
     if fig is None:
@@ -254,14 +262,24 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None,
             if y > x:
                 sptr1 = spike_trains[x]
                 sptr2 = spike_trains[y]
+
                 count, bins = correlogram(
-                    t1=sptr1.times.magnitude,
-                    t2=sptr2.times.magnitude,
+                    t1=sptr1.times.rescale(dim).magnitude,
+                    t2=sptr2.times.rescale(dim).magnitude,
                     binsize=binsize, limit=time_limit,  auto=False,
                     density=density)
-                axs[cnt].bar(bins[:-1] + binsize / 2., count,
-                             width=binsize, color='k',
-                             edgecolor='k')
+                if split_colors:
+                    c1, c2 = colors[x], colors[y]
+                    e1, e2 = edgecolors[x], edgecolors[y]
+                    c1_n = sum(bins < 0) + 2 # TODO will + 2 always be right?
+                    c2_n = len(bins) - c1_n
+                    cs = [c1] * c1_n + [c2] * c2_n
+                    es = [e1] * c1_n + [e2] * c2_n
+                else:
+                    cs, es = xcolor, xedgecolor
+                axs[cnt].bar(bins[1:], count,
+                             width=binsize, color=cs,
+                             edgecolor=es)
                 axs[cnt].set_xlim([-time_limit, time_limit])
                 name1 = sptr1.name or 'idx {}'.format(x)
                 name2 = sptr2.name or 'idx {}'.format(y)
@@ -270,11 +288,11 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None,
             elif y == x:
                 sptr = spike_trains[x]
                 count, bins = correlogram(
-                    t1=sptr.times.magnitude, t2=None,
+                    t1=sptr.times.rescale(dim).magnitude, t2=None,
                     binsize=binsize, limit=time_limit,
                     auto=True, density=density)
-                axs[cnt].bar(bins[:-1] + binsize / 2., count, width=binsize,
-                       color=colors[x], edgecolor=edgecolors[x])
+                axs[cnt].bar(bins[1:], count, width=binsize,
+                             color=colors[x], edgecolor=edgecolors[x])
                 axs[cnt].set_xlim([-time_limit, time_limit])
                 name = sptr.name or 'idx {}'.format(x)
                 axs[cnt].set_xlabel(name)
@@ -337,7 +355,7 @@ def plot_autocorr(sptr, title='', color='k', edgecolor='k', ax=None,
     limit = par['corr_limit'].rescale('s').magnitude
     count, bins = correlogram(t1=sptr.times.magnitude, t2=None,
                               binsize=bin_width, limit=limit,  auto=True)
-    ax.bar(bins[:-1] + bin_width / 2., count, width=bin_width, color=color,
+    ax.bar(bins[1:], count, width=bin_width, color=color,
             edgecolor=edgecolor)
     ax.set_xlim([-limit, limit])
     ax.set_title(title)
