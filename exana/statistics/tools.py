@@ -6,6 +6,14 @@ import neo
 def theta_mod_idx(sptr, **kwargs):
     '''Theta modulation index as defined in [3]_
 
+    Parameters
+    ----------
+    sptr : neo.SpikeTrain
+    binsize : Quantity
+        Temporal binsize of autocorrelogram
+    time_limit : Quantity
+        Limit of autocorrelogram
+
     References
     -----------
     .. [3] Cacucci, F., Lever, C., Wills, T. J., Burgess, N., & O'Keefe, J. (2004).
@@ -16,11 +24,13 @@ def theta_mod_idx(sptr, **kwargs):
            'corr_limit': 1.*pq.s}
     if kwargs:
         par.update(kwargs)
-    from .correlogram import correlogram
-    bin_width = par['corr_bin_width'].rescale('s').magnitude
-    limit = par['corr_limit'].rescale('s').magnitude
+    dim = sptr.times.dimensionality
+    binsize = par.get('corr_bin_width') or par.get('binsize')
+    binsize = binsize.rescale(dim).magnitude
+    time_limit = par.get('corr_limit') or par.get('time_limit')
+    time_limit = time_limit.rescale(dim).magnitude
     count, bins = correlogram(t1=sptr.times.magnitude, t2=None,
-                              bin_width=bin_width, limit=limit,  auto=True)
+                              binsize=binsize, limit=time_limit,  auto=True)
     th = count[(bins[:-1] >= .05) & (bins[:-1] <= .07)].mean()
     pk = count[(bins[:-1] >= .1) & (bins[:-1] <= .14)].mean()
     return (pk - th)/(pk + th)
@@ -501,7 +511,7 @@ def stat_test(tdict, test_func=None, nan_rule='remove', stat_key='statistic'):
     return pd.DataFrame([ps, sts], index=['p-value', stat_key])
 
 
-def correlogram(t1, t2=None, bin_width=.001, limit=.02, auto=False,
+def correlogram(t1, t2=None, binsize=.001, limit=.02, auto=False,
                 density=False):
     """Return crosscorrelogram of two spike trains.
 
@@ -518,7 +528,7 @@ def correlogram(t1, t2=None, bin_width=.001, limit=.02, auto=False,
             First spiketrain, raw spike times in seconds.
         t2 : np.array, or neo.SpikeTrain
             Second spiketrain, raw spike times in seconds.
-        bin_width : float, or quantities.Quantity
+        binsize : float, or quantities.Quantity
             Width of each bar in histogram in seconds.
         limit : float, or quantities.Quantity
             Positive and negative extent of histogram, in seconds.
@@ -548,8 +558,8 @@ def correlogram(t1, t2=None, bin_width=.001, limit=.02, auto=False,
     >>> t1 = np.arange(0, .5, .1)
     >>> t2 = np.arange(0.1, .6, .1)
     >>> limit = 1
-    >>> bin_width = .1
-    >>> counts, bins = correlogram(t1=t1, t2=t2, bin_width=bin_width,
+    >>> binsize = .1
+    >>> counts, bins = correlogram(t1=t1, t2=t2, binsize=binsize,
     ...                            limit=limit, auto=False)
     >>> counts
     array([0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0, 0, 0, 0])
@@ -573,8 +583,8 @@ def correlogram(t1, t2=None, bin_width=.001, limit=.02, auto=False,
         t1 = t1.times.rescale('s').magnitude
     if isinstance(t2, neo.SpikeTrain):
         t2 = t2.times.rescale('s').magnitude
-    if isinstance(bin_width, pq.Quantity):
-        bin_width = bin_width.rescale('s').magnitude
+    if isinstance(binsize, pq.Quantity):
+        binsize = binsize.rescale('s').magnitude
     if isinstance(limit, pq.Quantity):
         limit = limit.rescale('s').magnitude
     # For auto-CCGs, make sure we use the same exact values
@@ -595,9 +605,9 @@ def correlogram(t1, t2=None, bin_width=.001, limit=.02, auto=False,
     # Later we will rely on the symmetry of `bins` for undoing `swap_args`
     limit = float(limit)
 
-    # The numpy.arange method overshoots slightly the edges i.e. bin_width + epsilon
+    # The numpy.arange method overshoots slightly the edges i.e. binsize + epsilon
     # which leads to inclusion of spikes falling on edges.
-    bins = np.arange(-limit, limit + bin_width, bin_width)
+    bins = np.arange(-limit, limit + binsize, binsize)
 
     # Determine the indexes into `t2` that are relevant for each spike in `t1`
     ii2 = np.searchsorted(t2, t1 - limit)

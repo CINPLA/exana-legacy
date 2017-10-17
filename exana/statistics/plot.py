@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import quantities as pq
+import neo
+import warnings
 from ..misc.plot import simpleaxis
 
 
@@ -99,37 +101,231 @@ def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=None,
 
 
 def plot_isi_hist(sptr, alpha=1, ax=None, binsize=2*pq.ms,
-                  time_limit=100*pq.ms, color='b'):
+                  time_limit=100*pq.ms, color='b', edgecolor=None):
     """
     Bar plot of interspike interval (ISI) histogram
 
     Parameters
     ----------
     sptr : neo.SpikeTrain
-    color : color of histogram
+    color : str
+        color of histogram
+    edgecolor : str
+        edgecolor of histogram
     ax : matplotlib axes
-    alpha : opacity
-    binsize : binsize of spike rate histogram, default 30 ms
-    time_limit : end time of histogram x limit
+    alpha : float
+        opacity
+    binsize : Quantity(s)
+        binsize of spike rate histogram, default 2 ms
+    time_limit : Quantity(s)
+        end time of histogram x limit, default 100 ms
+
+    Examples
+    --------
+    >>> import neo
+    >>> from numpy.random import rand
+    >>> spike_train = neo.SpikeTrain(rand(1000) * 10, t_stop=10, units='s')
+    >>> ax = plot_isi_hist(spike_train, alpha=.1, binsize=10*pq.ms,
+    ...                    time_limit=100*pq.ms, color='r', edgecolor='r')
+
+    .. plot::
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import quantities as pq
+        import neo
+        from numpy.random import rand
+        from exana.statistics import plot_isi_hist
+        spike_train = neo.SpikeTrain(rand(1000) * 10, t_stop=10, units='s')
+        plot_isi_hist(spike_train, alpha=.5, binsize=10*pq.ms, time_limit=100*pq.ms, color='r')
+        plt.show()
 
     Returns
     -------
     out : axes
     """
+    edgecolor = edgecolor or color
     if ax is None:
         fig, ax = plt.subplots()
-    spk_isi = np.diff(sptr)*sptr.units
-    binsize.units = 's'
-    time_limit.units = 's'
-    ax.hist(spk_isi, bins=np.arange(0., time_limit.magnitude,
-            binsize.magnitude), normed=True, alpha=alpha, color=color)
-    ax.set_xlabel('$Interspike\, interval\, \Delta t \,[ms]$')
-    binsize.units = 'ms'
-    ax.set_ylabel('$Proportion\, of\, intervals\, (%.f ms\, bins)$' % binsize)
+    dim = sptr.times.dimensionality
+    spk_isi = np.diff(sorted(sptr.times))
+    binsize = binsize.rescale(dim).magnitude
+    time_limit = time_limit.rescale(dim).magnitude
+    ax.hist(spk_isi, bins=np.arange(0., time_limit, binsize),
+            normed=True, alpha=alpha, color=color, edgecolor=edgecolor)
+    ax.set_xlabel('Interspike interval $\Delta t$ [{}]'.format(dim))
+    ax.set_ylabel('Proportion of intervals in {} [{}]'.format(binsize, dim))
+    ax.set_xlim(0, time_limit)
     return ax
 
 
-def plot_autocorr(sptr, title='', color='k', edgecolor='k', ax=None, **kwargs):
+def plot_xcorr(spike_trains, colors=None, edgecolors=None,
+               fig=None, density=True, alpha=1., gs=None, binsize=1*pq.ms,
+               time_limit=1*pq.s):
+    """
+    Bar plot of crosscorrelation of two spiketrians
+
+    Parameters
+    ----------
+    spike_trains : list of neo.SpikeTrain or neo.SpikeTrain
+    colors : list or str
+        colors of histogram
+    edgecolors : list or str
+        edgecolor of histogram
+    ax : matplotlib axes
+    alpha : float
+        opacity
+    binsize : Quantity
+        binsize of spike rate histogram, default 2 ms
+    time_limit : Quantity
+        end time of histogram x limit, default 100 ms
+    gs : instance of matplotlib.gridspec
+
+    Examples
+    --------
+    >>> import neo
+    >>> from numpy.random import rand
+    >>> sptr1 = neo.SpikeTrain(rand(100) * 2, t_stop=2, units='s')
+    >>> sptr2 = neo.SpikeTrain(rand(100) * 2, t_stop=2, units='s')
+    >>> sptr3 = neo.SpikeTrain(rand(100) * 2, t_stop=2, units='s')
+    >>> fig = plot_xcorr([sptr1, sptr2, sptr3])
+
+    .. plot::
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import quantities as pq
+        import neo
+        from numpy.random import rand
+        from exana.statistics import plot_xcorr
+        sptr1 = neo.SpikeTrain(rand(100) * 2, t_stop=2, units='s')
+        sptr2 = neo.SpikeTrain(rand(100) * 2, t_stop=2, units='s')
+        sptr3 = neo.SpikeTrain(rand(100) * 2, t_stop=2, units='s')
+        plot_xcorr([sptr1, sptr2, sptr3])
+        plt.show()
+
+    Returns
+    -------
+    out : fig
+    """
+    # TODO sharex
+    if isinstance(spike_trains, neo.SpikeTrain):
+        spike_trains = [spike_trains]
+    elif not isinstance(spike_trains, list):
+        raise TypeError('"spike_trains" must be neo.SpikeTrain or "list" of ' +
+                        'neo.SpikeTrains.')
+    else:
+        assert all(isinstance(s, neo.SpikeTrain) for s in spike_trains), (
+            '"spike_trains" must be neo.SpikeTrain or "list" of ' +
+            'neo.SpikeTrains.')
+    from .tools import correlogram
+    import matplotlib.gridspec as gridspec
+    dim = spike_trains[0].times.dimensionality
+    binsize = binsize.rescale(dim).magnitude
+    time_limit = time_limit.rescale('s').magnitude
+    if colors is None:
+        from matplotlib.pyplot import cm
+        colors = cm.rainbow(np.linspace(0, 1, len(spike_trains)))
+    elif isinstance(colors, str):
+        colors = [colors] * len(spike_trains)
+    if edgecolors is None:
+        edgecolors = colors
+    elif isinstance(edgecolors, str):
+        edgecolors = [edgecolors] * len(spike_trains)
+
+    if fig is None:
+        fig = plt.figure()
+
+    nrc = len(spike_trains)
+    if gs is None:
+        gs0 = gridspec.GridSpec(nrc, nrc)
+    else:
+        gs0 = gridspec.GridSpecFromSubplotSpec(nrc, nrc, subplot_spec=gs)
+    axs = []
+    for x in range(nrc):
+        for y in range(nrc):
+            if (y > x) or (y == x):
+                ax = fig.add_subplot(gs0[x, y])
+                axs.append(ax)
+
+    cnt = 0
+    for x in range(nrc):
+        for y in range(nrc):
+            if y > x:
+                sptr1 = spike_trains[x]
+                sptr2 = spike_trains[y]
+                count, bins = correlogram(
+                    t1=sptr1.times.magnitude,
+                    t2=sptr2.times.magnitude,
+                    binsize=binsize, limit=time_limit,  auto=False,
+                    density=density)
+                axs[cnt].bar(bins[:-1] + binsize / 2., count,
+                             width=binsize, color='k',
+                             edgecolor='k')
+                axs[cnt].set_xlim([-time_limit, time_limit])
+                name1 = sptr1.name or 'idx {}'.format(x)
+                name2 = sptr2.name or 'idx {}'.format(y)
+                axs[cnt].set_xlabel(name1 + ' ' + name2)
+                cnt += 1
+            elif y == x:
+                sptr = spike_trains[x]
+                count, bins = correlogram(
+                    t1=sptr.times.magnitude, t2=None,
+                    binsize=binsize, limit=time_limit,
+                    auto=True, density=density)
+                axs[cnt].bar(bins[:-1] + binsize / 2., count, width=binsize,
+                       color=colors[x], edgecolor=edgecolors[x])
+                axs[cnt].set_xlim([-time_limit, time_limit])
+                name = sptr.name or 'idx {}'.format(x)
+                axs[cnt].set_xlabel(name)
+                cnt += 1
+    plt.tight_layout()
+    return fig
+
+
+def plot_autocorr(sptr, title='', color='k', edgecolor='k', ax=None,
+                  density=True, auto=True, **kwargs):
+    """
+    Bar plot of autocorrelation
+
+    Parameters
+    ----------
+    sptr : neo.SpikeTrain
+    color : str
+        color of histogram
+    edgecolor : str
+        edgecolor of histogram
+    ax : matplotlib axes
+    alpha : float
+        opacity
+    binsize : Quantity(s)
+        binsize of spike rate histogram, default 2 ms
+    time_limit : Quantity(s)
+        end time of histogram x limit, default 100 ms
+
+    Examples
+    --------
+    >>> import neo
+    >>> from numpy.random import rand
+    >>> sptr1 = neo.SpikeTrain(rand(100) * 2, t_stop=2, units='s')
+    >>> ax = plot_autocorr(sptr1)
+
+    .. plot::
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import quantities as pq
+        import neo
+        from numpy.random import rand
+        from exana.statistics import plot_autocorr
+        sptr1 = neo.SpikeTrain(rand(100) * 2, t_stop=2, units='s')
+        plot_autocorr(sptr1)
+        plt.show()
+
+    Returns
+    -------
+    out : ax
+    """
     par = {'corr_bin_width': 0.01*pq.s,
            'corr_limit': 1.*pq.s}
     if kwargs:
@@ -140,7 +336,7 @@ def plot_autocorr(sptr, title='', color='k', edgecolor='k', ax=None, **kwargs):
     bin_width = par['corr_bin_width'].rescale('s').magnitude
     limit = par['corr_limit'].rescale('s').magnitude
     count, bins = correlogram(t1=sptr.times.magnitude, t2=None,
-                              bin_width=bin_width, limit=limit,  auto=True)
+                              binsize=bin_width, limit=limit,  auto=True)
     ax.bar(bins[:-1] + bin_width / 2., count, width=bin_width, color=color,
             edgecolor=edgecolor)
     ax.set_xlim([-limit, limit])
