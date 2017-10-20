@@ -4,6 +4,14 @@ exana.misc package
 Submodules
 ----------
 
+exana.misc.peakdetect module
+----------------------------
+
+.. automodule:: exana.misc.peakdetect
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 exana.misc.plot module
 ----------------------
 

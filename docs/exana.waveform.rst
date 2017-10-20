@@ -12,6 +12,14 @@ exana.waveform.plot module
     :undoc-members:
     :show-inheritance:
 
+exana.waveform.tools module
+---------------------------
+
+.. automodule:: exana.waveform.tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

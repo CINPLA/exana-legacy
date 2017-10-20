@@ -12,6 +12,14 @@ exana.stimulus.plot module
     :undoc-members:
     :show-inheritance:
 
+exana.stimulus.stimulus_associated_latency module
+-------------------------------------------------
+
+.. automodule:: exana.stimulus.stimulus_associated_latency
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 exana.stimulus.tools module
 ---------------------------
 
