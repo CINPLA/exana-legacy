@@ -8,9 +8,9 @@ install:
   - bash -ex libs/travis-conda-scripts/scripts/travis_install.sh
 before_script:
   # this is for running test coverage on travis
-  - pip install numpy matplotlib scipy astropy
-  - pip install git+https://github.com/python-quantities/python-quantities.git
-  - pip install pytest coverage codecov elephant pandas
+  - pip install numpy matplotlib scipy astropy pandas
+  - pip install quantities neo elephant
+  - pip install pytest coverage codecov
   - python setup.py install
   # configure a headless display to test plot generation
   - "export DISPLAY=:99.0"
