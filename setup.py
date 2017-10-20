@@ -11,7 +11,7 @@ install_requires = [
     'neo>=0.5',
     'numpy>=1.9',
     'quantities>=0.10.1',
-    'scipy>=0.14.0',
+    'scipy',
     'astropy',
     'pandas>=0.14.1',
     'elephant',
@@ -19,12 +19,14 @@ install_requires = [
 extras_require = {
     'testing': ['pytest'],
     'docs': ['numpydoc>=0.5',
-             'sphinx>=1.2.2']
+             'sphinx>=1.2.2',
+             'sphinx_rtd_theme']
 }
 
 setup(
     name="exana",
     install_requires=install_requires,
+    tests_require=install_requires,
     extras_require=extras_require,
     packages=find_packages(),
     include_package_data=True,
