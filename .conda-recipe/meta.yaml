@@ -4,7 +4,7 @@ package:
 source:
     git_url: ..
 build:
-    script: pip install neo && python setup.py install
+    script: pip install neo elephant && python setup.py install
 requirements:
     build:
         - python
@@ -14,12 +14,14 @@ requirements:
         - pandas
         - matplotlib
         - scipy
+        - astropy
         - quantities
     run:
         - python
         - setuptools
         - pip
         - numpy
+        - astropy
         - pandas
         - scipy
         - quantities
