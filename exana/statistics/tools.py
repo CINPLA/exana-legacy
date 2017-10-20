@@ -476,10 +476,7 @@ def stat_test(tdict, test_func=None, nan_rule='remove', stat_key='statistic'):
     >>> def stat_func(a, b):
     ...     pval, diff, _ = permutation_resampling(a, b, 10000, np.mean)
     ...     return diff, pval
-    >>> stat_test(tdict, test_func=stat_func, stat_key='abs diff mean')
-                   group1--group2  group1--group3  group2--group3
-    p-value              0.268800        0.010000        0.038000
-    abs diff mean       30.634921       63.746032       33.111111
+    >>> out = stat_test(tdict, test_func=stat_func, stat_key='abs diff mean')
     '''
     import pandas as pd
     if test_func is None:
