@@ -247,7 +247,7 @@ def extract_rising_edges(adc_signal, times, thresh=1.65):
 
     return rising_times
 
-def filter_analog_signals(anas, freq, fs, filter_type='bandpass', order=3, copy_signal=False):
+def filter_analog_signals(anas, freq, fs, filter_type='bandpass', filter_function='filtfilt', order=3, copy_signal=False):
     """Filters analog signals with zero-phase Butterworth filter.
     The function raises an Exception if the required filter is not stable.
 
@@ -261,6 +261,8 @@ def filter_analog_signals(anas, freq, fs, filter_type='bandpass', order=3, copy_
          sampling frequency
     filter_type : string
                   'lowpass', 'highpass', 'bandpass', 'bandstop'
+    filter_function : string
+        'filtfilt' or 'lfilter'
     order : int
             filter order
     parallel : bool
@@ -272,18 +274,25 @@ def filter_analog_signals(anas, freq, fs, filter_type='bandpass', order=3, copy_
     -------
     anas_filt : filtered signals
     """
-    from scipy.signal import butter, filtfilt
+    from scipy.signal import butter, filtfilt, lfilter
     fn = fs / 2.
     band = np.array(freq) / fn
+
+    if filter_function == 'filtfilt':
+        filterfun = filtfilt
+    elif filter_function == 'lfilter':
+        filterfun = lfilter
+    else:
+        raise NotImplementedError('filter-function {} not recognized'.format(filter_function))
 
     b, a = butter(order, band, btype=filter_type)
 
     if np.all(np.abs(np.roots(a)) < 1) and np.all(np.abs(np.roots(a)) < 1):
-        print('Filtering signals with ', filter_type, ' filter at ' , freq ,'...')
+        print('Filtering signals using', filter_function, 'with order', order, filter_type, 'filter cutoff(s) at' , freq ,'...')
         if len(anas.shape) == 2:
-            anas_filt = filtfilt(b, a, anas, axis=1)
+            anas_filt = filterfun(b, a, anas, axis=1)
         elif len(anas.shape) == 1:
-            anas_filt = filtfilt(b, a, anas)
+            anas_filt = filterfun(b, a, anas)
         return anas_filt
     else:
         raise ValueError('Filter is not stable')
@@ -408,7 +417,8 @@ def save_binary_format(filename, signal, spikesorter='klusta'):
 
 
 def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
-                      klusta_filter=True, filter_low=300, filter_high=6000):
+                      klusta_filter=True, filter_low=300, filter_high=6000,
+                      filter_order=3):
     """Creates klusta .prm files, with spikesorting parameters
 
     Parameters
@@ -450,16 +460,17 @@ def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
         f.write("spikedetekt = dict(")
         if klusta_filter:
             f.write("\n\tfilter_low="+str(filter_low)+",\n\tfilter_high="+str(filter_high)+","
-                    "\n\tfilter_butter_order=3,\n\tfilter_lfp_low=0,\n\tfilter_lfp_high=300,\n")
+                    "\n\tfilter_butter_order="+str(filter_order)+",\n\tfilter_lfp_low=0,\n\tfilter_lfp_high=300,\n")
         f.write("\n\tchunk_size_seconds=1,\n\tchunk_overlap_seconds=.015,\n"
                 "\n\tn_excerpts=50,\n\texcerpt_size_seconds=1,"
+                "\n\tuse_single_threshold=False,"
                 "\n\tthreshold_strong_std_factor=4.5,\n\tthreshold_weak_std_factor=2,\n\tdetect_spikes='negative',"
                 "\n\n\tconnected_component_join_size=1,\n"
                 "\n\textract_s_before=16,\n\textract_s_after=48,\n"
                 "\n\tn_features_per_channel=3,\n\tpca_n_waveforms_max=10000,\n)")
         f.write('\n')
         f.write('\n')
-        f.write("klustakwik2 = dict(\n\tnum_starting_clusters=50,\n)")
+        f.write("klustakwik2 = dict(\n\tnum_starting_clusters=50,\n\tnum_cpus=4\n)")
                 # "\n\tnum_cpus=4,)")
     return full_filename
 
