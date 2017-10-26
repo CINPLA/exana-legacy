@@ -437,6 +437,9 @@ def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
                 low cutoff frequency (if klusta_filter is True)
     filter_high : float
                   high cutoff frequency (if klusta_filter is True)
+    filter_order : int
+        Butterworth filter order, default is 3.
+    
     Returns
     -------
     full_filename : absolute path of .prm file
