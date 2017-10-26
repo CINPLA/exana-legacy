@@ -7,12 +7,12 @@ import quantities as pq
 
 def auto_denoise(anas, thresh=None, copy_signal=True):
     """Clean neural data from EMG, chewing, and moving artifact noise
-    Rectified signals are smoothed and thresholded to find and remove 
+    Rectified signals are smoothed and thresholded to find and remove
     noisy portion of the signals.
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of analog signals
     thresh : float
              (optional) threshold in number of SD on high-pass data
@@ -29,7 +29,7 @@ def auto_denoise(anas, thresh=None, copy_signal=True):
         thresh = thresh
     else:
         thresh = 2.5
-    
+
     if copy_anas:
         anas_copy = copy(anas)
     else:
@@ -63,7 +63,7 @@ def manual_denoise(anas, thresh=None, copy_signal=True):
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of analog signals
     thresh : float
              (optional) threshold in number of SD on high-pass data
@@ -72,7 +72,7 @@ def manual_denoise(anas, thresh=None, copy_signal=True):
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of analog signals
     thresh : float
              (optional) threshold in number of SD on high-pass data
@@ -108,18 +108,18 @@ def manual_denoise(anas, thresh=None, copy_signal=True):
     return anas_copy
 
 def ica_denoise(anas, channels=None, n_comp=10, correlation_thresh=0.1):
-    """Removes noise by ICA. Indepentend components highly correlated to the 
+    """Removes noise by ICA. Indepentend components highly correlated to the
     grand average of the signals are removed.
     Signals are then back projected to the channel space.
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of analog signals
     channels : list
                list of good channels to perform ICA with
     n_comp : int
-             number of ICA components 
+             number of ICA components
     correlation_tresh : float
                         correlation threshold between average signal
                         and source above which source contibution gets
@@ -167,7 +167,7 @@ def apply_CAR(anas, channels=None, car_type='mean', split_probe=None, copy_signa
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of analog signals
     channels : list
                list of good channels to perform CAR/CMR with
@@ -222,7 +222,7 @@ def extract_rising_edges(adc_signal, times, thresh=1.65):
 
     Parameters
     ----------
-    adc_signal : np.array 
+    adc_signal : np.array
                  1d array of analog TTL signal
     times : np.array
             timestamps array
@@ -253,7 +253,7 @@ def filter_analog_signals(anas, freq, fs, filter_type='bandpass', filter_functio
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of analog signals
     freq : list or float
            cutoff frequency-ies in Hz
@@ -302,7 +302,7 @@ def ground_bad_channels(anas, bad_channels, copy_signal=True):
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of analog signals
     bad_channels : list
                    list of channels to be grounded
@@ -332,12 +332,12 @@ def ground_bad_channels(anas, bad_channels, copy_signal=True):
 
 
 def duplicate_bad_channels(anas, bad_channels, probefile, copy_signal=True):
-    """Duplicate selected noisy channels with channels in 
+    """Duplicate selected noisy channels with channels in
     the same channel group.
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of analog signals
     bad_channels : list
                    list of channels to be grounded
@@ -396,7 +396,7 @@ def save_binary_format(filename, signal, spikesorter='klusta'):
     ----------
     filename : string
                absolute path (_klusta.dat or _spycircus.dat are appended)
-    signal : np.array 
+    signal : np.array
              2d array of analog signals
     spikesorter : string
                   'klusta' or 'spykingcircus'
@@ -425,7 +425,7 @@ def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
     ----------
     pathname : string
                absolute path (_klusta.dat or _spycircus.dat are appended)
-    prbpath : np.array 
+    prbpath : np.array
               2d array of analog signals
     nchan : int
             number of channels
@@ -464,7 +464,7 @@ def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
         f.write("\n\tchunk_size_seconds=1,\n\tchunk_overlap_seconds=.015,\n"
                 "\n\tn_excerpts=50,\n\texcerpt_size_seconds=1,"
                 "\n\tuse_single_threshold=False,"
-                "\n\tthreshold_strong_std_factor=4.5,\n\tthreshold_weak_std_factor=2,\n\tdetect_spikes='negative',"
+                "\n\tthreshold_strong_std_factor=4,\n\tthreshold_weak_std_factor=2,\n\tdetect_spikes='negative',"
                 "\n\n\tconnected_component_join_size=1,\n"
                 "\n\textract_s_before=16,\n\textract_s_after=48,\n"
                 "\n\tn_features_per_channel=3,\n\tpca_n_waveforms_max=10000,\n)")
@@ -475,14 +475,14 @@ def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
     return full_filename
 
 
-def remove_stimulation_artifacts(anas, times, trigger, pre=3 * pq.ms, post=5 * pq.ms, 
+def remove_stimulation_artifacts(anas, times, trigger, pre=3 * pq.ms, post=5 * pq.ms,
                                  mode='zero', copy_signal=True):
     """Removes stimulation artifact by either grounding the stimulation window or
     computing and removing the average artifact template.
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of analog signals
     times : quantity list
             timestamps
@@ -506,7 +506,7 @@ def remove_stimulation_artifacts(anas, times, trigger, pre=3 * pq.ms, post=5 * p
     if copy_signal:
         anas_rem = copy(anas)
     else:
-        anas_rem = anas       
+        anas_rem = anas
     print('Removing stimulation artifacts from ', len(trigger), ' triggers...')
 
     if mode is 'template':
@@ -545,13 +545,13 @@ def extract_stimulation_waveform(stim, trig, times):
 
     Parameters
     ----------
-    stim : np.array 
+    stim : np.array
            2d array of stimulation analog signals
     trigger : quantity list
               timestamps of stimulation triggers
     times : quantity list
             timestamps
-    
+
     Returns
     -------
     stim_clip : single stimulation pulse
@@ -608,9 +608,9 @@ def downsample_250(anas):
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of stimulation analog signals
-    
+
     Returns
     -------
     out : downsampled analog signals
@@ -639,7 +639,7 @@ def find_frequency_range(anas, fs, freq_range, nchunks=30, chunksize=1*pq.s):
 
     Parameters
     ----------
-    anas : np.array 
+    anas : np.array
            2d array of stimulation analog signals
     fs : quantity
          sampling frequency in Hz
@@ -647,9 +647,9 @@ def find_frequency_range(anas, fs, freq_range, nchunks=30, chunksize=1*pq.s):
                 freq boundaries to find peak in
     nchunks: int
              number of chunks used to compute spectra
-    chunksize: time Quantity 
+    chunksize: time Quantity
                length of chunks
-    
+
     Returns
     -------
     fpeak : peak in Hz
@@ -665,8 +665,7 @@ def find_frequency_range(anas, fs, freq_range, nchunks=30, chunksize=1*pq.s):
     avg_spectrum = np.mean(Pxxpre, axis=0)
     fpeak = fpre[np.where((fpre>freq_range[0]) &
                           (fpre<freq_range[1]))][np.argmax(avg_spectrum[np.where(
-                              (fpre>freq_range[0]) & 
+                              (fpre>freq_range[0]) &
                               (fpre<freq_range[1]))])]
 
     return int(fpeak)*pq.Hz
-
