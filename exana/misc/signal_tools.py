@@ -470,7 +470,7 @@ def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
                 "\n\tn_features_per_channel=3,\n\tpca_n_waveforms_max=10000,\n)")
         f.write('\n')
         f.write('\n')
-        f.write("klustakwik2 = dict(\n\tnum_starting_clusters=50,\n\tnum_cpus=4\n)")
+        f.write("klustakwik2 = dict(\n\tnum_starting_clusters=50,\n\tnum_cpus=8\n)")
                 # "\n\tnum_cpus=4,)")
     return full_filename
 
