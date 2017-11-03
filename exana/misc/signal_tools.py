@@ -418,7 +418,10 @@ def save_binary_format(filename, signal, spikesorter='klusta'):
 
 def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
                       klusta_filter=True, filter_low=300, filter_high=6000,
-                      filter_order=3):
+                      filter_order=3,
+                      use_single_threshold=True,
+                      threshold_strong_std_factor=4.5,
+                      threshold_weak_std_factor=2):
     """Creates klusta .prm files, with spikesorting parameters
 
     Parameters
@@ -466,8 +469,10 @@ def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
                     "\n\tfilter_butter_order="+str(filter_order)+",\n\tfilter_lfp_low=0,\n\tfilter_lfp_high=300,\n")
         f.write("\n\tchunk_size_seconds=1,\n\tchunk_overlap_seconds=.015,\n"
                 "\n\tn_excerpts=50,\n\texcerpt_size_seconds=1,"
-                "\n\tuse_single_threshold=False,"
-                "\n\tthreshold_strong_std_factor=4.5,\n\tthreshold_weak_std_factor=2,\n\tdetect_spikes='negative',"
+                "\n\tuse_single_threshold=" + str(use_single_threshold) +","
+                "\n\tthreshold_strong_std_factor=" + str(threshold_strong_std_factor) + ",\n"
+                "\tthreshold_weak_std_factor=" + str(threshold_weak_std_factor) + ",\n"
+                "\tdetect_spikes='negative',"
                 "\n\n\tconnected_component_join_size=1,\n"
                 "\n\textract_s_before=16,\n\textract_s_after=48,\n"
                 "\n\tn_features_per_channel=3,\n\tpca_n_waveforms_max=10000,\n)")
