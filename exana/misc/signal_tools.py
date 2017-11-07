@@ -288,7 +288,7 @@ def filter_analog_signals(anas, freq, fs, filter_type='bandpass', filter_functio
     b, a = butter(order, band, btype=filter_type)
 
     if np.all(np.abs(np.roots(a)) < 1) and np.all(np.abs(np.roots(a)) < 1):
-        print('Filtering signals using', filter_function, 'with order', order, filter_type, 'filter cutoff(s) at' , freq ,'...')
+        print('Filtering signals using', filter_function, 'with order', order, filter_type, 'with critical frequencies', freq ,'...')
         if len(anas.shape) == 2:
             anas_filt = filterfun(b, a, anas, axis=1)
         elif len(anas.shape) == 1:
@@ -439,7 +439,7 @@ def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
                   high cutoff frequency (if klusta_filter is True)
     filter_order : int
         Butterworth filter order, default is 3.
-    
+
     Returns
     -------
     full_filename : absolute path of .prm file
@@ -469,7 +469,7 @@ def create_klusta_prm(pathname, prb_path, nchan=32, fs=30000,
                 "\n\tuse_single_threshold=False,"
                 "\n\tthreshold_strong_std_factor=4,\n\tthreshold_weak_std_factor=2,\n\tdetect_spikes='negative',"
                 "\n\n\tconnected_component_join_size=1,\n"
-                "\n\textract_s_before=16,\n\textract_s_after=48,\n"
+                "\n\textract_s_before=16,\n\textract_s_after=64,\n"
                 "\n\tn_features_per_channel=3,\n\tpca_n_waveforms_max=10000,\n)")
         f.write('\n')
         f.write('\n')
