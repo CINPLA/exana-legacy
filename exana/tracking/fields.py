@@ -130,10 +130,10 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
     >>> from exana.tracking.tools import make_test_grid_rate_map
     >>> import matplotlib.pyplot as plt
     >>> rate_map, pos = make_test_grid_rate_map()
-    >>> iter_score = gridness(rate_map*pq.cm, box_xlen=50*pq.cm, box_ylen=50*pq.cm, method='iter')
+    >>> iter_score = gridness(rate_map, box_xlen=1*pq.m, box_ylen=1*pq.m, method='iter')
     >>> print('%.2f' % iter_score)
-    1.32
-    >>> puncture_score = gridness(rate_map*pq.cm, box_xlen=50*pq.cm, box_ylen=50*pq.cm, method='puncture')
+    1.39
+    >>> puncture_score = gridness(rate_map, box_xlen=1*pq.m, box_ylen=1*pq.m, method='puncture')
     >>> print('%.2f' % puncture_score)
     0.96
 
@@ -147,12 +147,12 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
         import matplotlib.pyplot as plt
         rate_map, _ = make_test_grid_rate_map()
         fig, axs = plt.subplots(2, 2)
-        g1, acorr, m_acorr1 = gridness(rate_map*pq.cm, box_xlen=50*pq.cm,
-                                         box_ylen=50*pq.cm, return_acorr=True,
+        g1, acorr, m_acorr1 = gridness(rate_map, box_xlen=1*pq.m,
+                                         box_ylen=1*pq.m, return_acorr=True,
                                          return_masked_acorr=True,
                                          method='iter')
-        g2, m_acorr2 = gridness(rate_map*pq.cm, box_xlen=50*pq.cm,
-                                         box_ylen=50*pq.cm,
+        g2, m_acorr2 = gridness(rate_map, box_xlen=1*pq.m,
+                                         box_ylen=1*pq.m,
                                          return_masked_acorr=True,
                                          method='puncture')
         mats = [rate_map, m_acorr1, acorr, m_acorr2]
@@ -170,11 +170,9 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
     from exana.tracking.tools import gaussian2D
     from scipy.optimize import curve_fit
     is_quantities([box_xlen, box_ylen, step_size], 'scalar')
-    is_quantities(rate_map, 'matrix')
     box_xlen = box_xlen.rescale('m').magnitude
     box_ylen = box_ylen.rescale('m').magnitude
     step_size = step_size.rescale('m').magnitude
-    rate_map = rate_map.rescale('m').magnitude
     tmp_map = rate_map.copy()
     tmp_map[~np.isfinite(tmp_map)] = 0
     acorr = fftcorrelate2d(tmp_map, tmp_map, mode='full', normalize=True)
