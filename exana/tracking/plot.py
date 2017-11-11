@@ -48,6 +48,8 @@ def plot_path(x, y, t, box_xlen, box_ylen, sptr=None,
     -------
     out : ax
     """
+    is_quantities([box_xlen, box_ylen], 'scalar')
+    is_quantities([x, y, t], 'vector')
     box_xlen = float(box_xlen.rescale('m').magnitude)
     box_ylen = float(box_ylen.rescale('m').magnitude)
     if ax is None:

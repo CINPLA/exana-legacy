@@ -45,8 +45,8 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     remaindery = dec(float(box_ylen)*decimals) % dec(float(binsize)*decimals)
     if remainderx != 0 or remaindery != 0:
         raise ValueError('the remainder should be zero i.e. the ' +
-                                     'box length should be an exact multiple ' +
-                                     'of the binsize')
+                         'box length should be an exact multiple ' +
+                         'of the binsize')
     is_quantities([x, y, t], 'vector')
     is_quantities(binsize, 'scalar')
     t = t.rescale('s')
@@ -58,7 +58,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
 
     # interpolate one extra timepoint
     t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))]) * pq.s
-    spikes_in_bin, _ = np.histogram(sptr.times, t_)
+    spikes_in_bin, _ = np.histogram(sptr, t_)
     time_in_bin = np.diff(t_.magnitude)
     xbins = np.arange(0, box_xlen + binsize, binsize)
     ybins = np.arange(0, box_ylen + binsize, binsize)
@@ -90,7 +90,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
 
 
 def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
-             step_size=0.1*pq.m):
+             step_size=0.1*pq.m, method='iter', return_masked_acorr=False):
     '''Calculates gridness of a rate map. Calculates the normalized
     autocorrelation (A) of a rate map B where A is given as
     A = 1/n\Sum_{x,y}(B - \bar{B})^{2}/\sigma_{B}^{2}. Further, the Pearsson's
@@ -98,10 +98,15 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
     rotated 30 and 60 degrees. Finally the gridness is calculated as the
     difference between the minimum of coefficients at 60 degrees and the
     maximum of coefficients at 30 degrees i.e. gridness = min(r60) - max(r30).
+
+    If the method 'iter' is chosen:
     In order to focus the analysis on symmetry of A the the central and the
     outer part of the gridness is maximized by increasingly mask A at steps of
-    ``step_size``. This function is inspired by Lukas Solankas gridcells
-    package from Matt Nolans lab.
+    ``step_size``.
+
+    If the method 'puncture' is chosen:
+    This is the standard way of calculating gridness, by masking the central
+    autocorrelation bump, in addition to rounding the map. See examples.
 
     Parameters
     ----------
@@ -109,51 +114,122 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
     box_xlen : quantities scalar in m
         side length of quadratic box
     step_size : quantities scalar in m
-        step size in masking
+        step size in masking, only applies to the method "iter"
     return_acorr : bool
         return autocorrelation map or not
+    return_masked_acorr : bool
+        return masked autocorrelation map or not
+    method : 'iter' or 'puncture'
 
     Returns
     -------
-    out : gridness, (autocorrelation map)
+    out : gridness, (autocorrelation map, masked autocorrelation map)
+
+    Examples
+    --------
+    >>> from exana.tracking.tools import make_test_grid_rate_map
+    >>> import matplotlib.pyplot as plt
+    >>> rate_map, pos = make_test_grid_rate_map()
+    >>> iter_score = gridness(rate_map*pq.cm, box_xlen=50*pq.cm, box_ylen=50*pq.cm, method='iter')
+    >>> print('%.2f' % iter_score)
+    1.32
+    >>> puncture_score = gridness(rate_map*pq.cm, box_xlen=50*pq.cm, box_ylen=50*pq.cm, method='puncture')
+    >>> print('%.2f' % puncture_score)
+    0.96
+
+    .. plot::
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import quantities as pq
+        from exana.tracking.tools import make_test_grid_rate_map
+        from exana.tracking import gridness
+        import matplotlib.pyplot as plt
+        rate_map, _ = make_test_grid_rate_map()
+        fig, axs = plt.subplots(2, 2)
+        g1, acorr, m_acorr1 = gridness(rate_map*pq.cm, box_xlen=50*pq.cm,
+                                         box_ylen=50*pq.cm, return_acorr=True,
+                                         return_masked_acorr=True,
+                                         method='iter')
+        g2, m_acorr2 = gridness(rate_map*pq.cm, box_xlen=50*pq.cm,
+                                         box_ylen=50*pq.cm,
+                                         return_masked_acorr=True,
+                                         method='puncture')
+        mats = [rate_map, m_acorr1, acorr, m_acorr2]
+        titles = ['Rate map', 'Masked acorr "iter", gridness = %.2f' % g1,
+                  'Autocorrelation',
+                  'Masked acorr "puncture", gridness = %.2f' % g2]
+        for ax, mat, title in zip(axs.ravel(), mats, titles):
+            ax.imshow(mat)
+            ax.set_title(title)
+        plt.tight_layout()
+        plt.show()
     '''
-    from scipy.ndimage.interpolation import rotate
     import numpy.ma as ma
-    from exana.misc.tools import (is_quantities, fftcorrelate2d,
-                                            masked_corrcoef2d)
+    from exana.misc.tools import (is_quantities, fftcorrelate2d)
+    from exana.tracking.tools import gaussian2D
+    from scipy.optimize import curve_fit
     is_quantities([box_xlen, box_ylen, step_size], 'scalar')
+    is_quantities(rate_map, 'matrix')
     box_xlen = box_xlen.rescale('m').magnitude
     box_ylen = box_ylen.rescale('m').magnitude
     step_size = step_size.rescale('m').magnitude
+    rate_map = rate_map.rescale('m').magnitude
     tmp_map = rate_map.copy()
     tmp_map[~np.isfinite(tmp_map)] = 0
     acorr = fftcorrelate2d(tmp_map, tmp_map, mode='full', normalize=True)
     rows, cols = acorr.shape
-    b_x = np.linspace(-box_xlen/2., box_xlen/2., rows)
-    b_y = np.linspace(-box_ylen/2., box_ylen/2., cols)
+    b_x = np.linspace(- box_xlen / 2., box_xlen / 2., rows)
+    b_y = np.linspace(- box_ylen / 2., box_ylen / 2., cols)
     B_x, B_y = np.meshgrid(b_x, b_y)
-    grids = []
-    acorrs = []
-    # TODO find size of middle gaussian and exclude
-    for outer in np.arange(box_xlen/4, box_xlen/2, step_size):
-        m_acorr = ma.masked_array(acorr, mask=np.sqrt(B_x**2 + B_y**2) > outer)
-        for inner in np.arange(0, box_xlen/4, step_size):
-            m_acorr = \
-                ma.masked_array(m_acorr, mask=np.sqrt(B_x**2 + B_y**2) < inner)
-            angles = range(30, 180+30, 30)
-            corr = []
-            # Rotate and compute correlation coefficient
-            for angle in angles:
-                rot_acorr = rotate(m_acorr, angle, reshape=False)
-                corr.append(masked_corrcoef2d(rot_acorr, m_acorr)[0, 1])
-            r60 = corr[1::2]
-            r30 = corr[::2]
-            grids.append(np.min(r60) - np.max(r30))
-            acorrs.append(m_acorr)
+    if method == 'iter':
+        if return_masked_acorr: m_acorrs = []
+        gridscores = []
+        for outer in np.arange(box_xlen / 4, box_xlen / 2, step_size):
+            m_acorr = ma.masked_array(
+                acorr, mask=np.sqrt(B_x**2 + B_y**2) > outer)
+            for inner in np.arange(0, box_xlen / 4, step_size):
+                m_acorr = ma.masked_array(
+                    m_acorr, mask=np.sqrt(B_x**2 + B_y**2) < inner)
+                r30, r60 = rotate_corr(m_acorr)
+                gridscores.append(np.min(r60) - np.max(r30))
+                if return_masked_acorr: m_acorrs.append(m_acorr)
+        gridscore = max(gridscores)
+        if return_masked_acorr: m_acorr = m_acorrs[gridscores.index(gridscore)]
+    elif method == 'puncture':
+        # round picture edges
+        _gaussian = lambda pos, a, s: gaussian2D(a, pos[0], pos[1], 0, 0, s).ravel()
+        p0 = (max(acorr.ravel()), min(box_xlen, box_ylen) / 100)
+        popt, pcov = curve_fit(_gaussian, (B_x, B_y), acorr.ravel(),
+                               p0=p0)
+        m_acorr = ma.masked_array(
+            acorr, mask=np.sqrt(B_x**2 + B_y**2) > min(box_xlen, box_ylen) / 2)
+        m_acorr = ma.masked_array(
+            m_acorr, mask=np.sqrt(B_x**2 + B_y**2) < popt[1])
+        r30, r60 = rotate_corr(m_acorr)
+        gridscore = float(np.min(r60) - np.max(r30))
+    if return_acorr and return_masked_acorr:
+        return gridscore, acorr, m_acorr
+    if return_masked_acorr:
+        return gridscore, m_acorr
     if return_acorr:
-        return max(grids), acorr,  # acorrs[grids.index(max(grids))]
+        return gridscore, acorr  # acorrs[grids.index(max(grids))]
     else:
-        return max(grids)
+        return gridscore
+
+
+def rotate_corr(acorr):
+    from exana.misc.tools import masked_corrcoef2d
+    from scipy.ndimage.interpolation import rotate
+    angles = range(30, 180+30, 30)
+    corr = []
+    # Rotate and compute correlation coefficient
+    for angle in angles:
+        rot_acorr = rotate(acorr, angle, reshape=False)
+        corr.append(masked_corrcoef2d(rot_acorr, acorr)[0, 1])
+    r60 = corr[1::2]
+    r30 = corr[::2]
+    return r30, r60
 
 
 def occupancy_map(x, y, t,
@@ -368,7 +444,7 @@ def spatial_rate_map_1d(x, t, sptr,
     x = x.rescale('m').magnitude
     # interpolate one extra timepoint
     t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))]) * pq.s
-    spikes_in_bin, _ = np.histogram(sptr.times, t_)
+    spikes_in_bin, _ = np.histogram(sptr, t_)
     time_in_bin = np.diff(t_.magnitude)
     xbins = np.arange(0, track_len + binsize, binsize)
     ix = np.digitize(x, xbins, right=True)
@@ -395,8 +471,6 @@ def spatial_rate_map_1d(x, t, sptr,
         return rate.T, xbins
     else:
         return rate.T
-
-
 
 
 def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
@@ -499,6 +573,7 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
 
     # TODO exclude fields where maxima is on the edge of the field?
     return fields, n_fields, bc
+
 
 def get_bump_centers(rate_map, labels, ret_index=False, indices=None, method='maxima',
         units=1*pq.m):

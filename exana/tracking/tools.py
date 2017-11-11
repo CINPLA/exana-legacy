@@ -439,13 +439,81 @@ def identify_laps_on_linear_track(x,
 
     valid_start = [0. * pq.m,
                    val_margin*x_max]
-    valid_stop = [x_max - val_margin * x_max,
-                  x_max]
+    valid_stop = [x_max - val_margin * x_max, x_max]
 
     laps_start2end = find_laps(min_peaks, max_peaks, valid_start, valid_stop)
     laps_end2start = find_laps(max_peaks, min_peaks, valid_stop, valid_start)
 
     return laps_start2end, laps_end2start
+
+
+def gaussian2D(amp, x, y, xc, yc, s):
+    return amp * np.exp(- 0.5 * (((x - xc) / s)**2 + ((y - yc) / s)**2))
+
+
+def make_test_grid_rate_map(sigma=0.05*np.ones(7), spacing=0.3,
+                            amplitude=np.ones(7), dpos=0,
+                            box_xlen=1*pq.m, box_ylen=1*pq.m):
+    box_xlen = box_xlen.rescale('m').magnitude
+    box_ylen = box_ylen.rescale('m').magnitude
+    x = np.linspace(0, box_xlen, 50)
+    y = np.linspace(0, box_ylen, 50)
+    x,y = np.meshgrid(x,y)
+
+    p0 = np.array((0.5, 0.5)) + dpos
+    pos = [p0]
+
+    angles = np.linspace(0, 2 * np.pi, 7)[:-1]
+
+    rate_map = np.zeros_like(x)
+    rate_map += gaussian2D(1, x, y, *p0, sigma[0])
+
+    for i, a in enumerate(angles):
+        p = p0 + [spacing * f(a) for f in [np.cos, np.sin]]
+        rate_map += gaussian2D(amplitude[i], x, y, *p, sigma[i])
+        pos.append(p)
+    return rate_map, np.array(pos)
+
+
+def make_test_grid_spike_path(t_stop=10*pq.min, dt=1/(30*pq.Hz), box_xlen=1*pq.m,
+                              box_ylen=1*pq.m):
+    from elephant.spike_train_generation import homogeneous_poisson_process as hpp
+    rate_map, grid_pos = make_test_grid_rate_map(box_xlen=box_xlen,
+                                                 box_ylen=box_ylen)
+    box_xlen = box_xlen.rescale('m').magnitude
+    box_ylen = box_ylen.rescale('m').magnitude
+    ny, nx = rate_map.shape
+    rate_map = rate_map > 0.1
+    xref = np.linspace(0, box_xlen, nx)
+    yref = np.linspace(0, box_ylen, ny)
+    t_stop = t_stop.rescale('s').magnitude
+    dt = dt.rescale('s').magnitude
+    time = np.arange(0, t_stop, dt)
+
+    def speed_good(x1, y1, x2, y2, threshold=1):
+        return (np.sqrt((x2 - x1)**2 + (y2 - y1)**2)) / dt < threshold
+    x = [0]
+    y = [0]
+    spikes = []
+    while len(x) < len(time):
+        x2 = np.random.uniform(0, 1, 1) * box_xlen
+        y2 = np.random.uniform(0, 1, 1) * box_ylen
+        if speed_good(x[-1], y[-1], x2, y2):
+            x.append(x2)
+            y.append(y2)
+            xdiff = xref - x2
+            xdiff[xdiff < 0] = np.inf
+            xidx = np.argmin(xdiff)
+            ydiff = yref - y2
+            ydiff[ydiff < 0] = np.inf
+            curr_t = time[len(x) - 1]
+            yidx = np.argmin(ydiff)
+            if rate_map[yidx, xidx]:
+                st = hpp(rate=30.0 * pq.Hz, t_start=curr_t * pq.s,
+                         t_stop=(curr_t + dt) * pq.s)
+                spikes.extend(st.times.magnitude.tolist())
+
+    return x, y, time, spikes
 
 
 def gaussian2D_asym(pos, amplitude, xc, yc, sigma_x, sigma_y, theta):
@@ -509,9 +577,6 @@ def fit_gauss_asym(data, p0 = None, return_data=True):
         return popt
 
 
-
-
-
 def separation_error_func(smoothing, lpl_thrsh, rate_map):
     """
     Gives a measure of how well the smoothing and laplace-threshold factors
@@ -520,7 +585,7 @@ def separation_error_func(smoothing, lpl_thrsh, rate_map):
     closest neighbors from the average distance as gotten from
     tr.fields.find_avg_dist, and the relative difference in area of each of
     the fields.
-    
+
     Parameters
     -----------
         smoothing : float

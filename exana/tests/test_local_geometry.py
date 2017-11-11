@@ -1,11 +1,11 @@
 import numpy as np
 
 
-def _gaussian(x,y,xc,yc,s):
-    return np.exp(-0.5*(((x-xc)/s)**2 + ((y-yc)/s)**2))
+def _gaussian(x, y, xc, yc, s):
+    return np.exp(- 0.5 * (((x - xc) / s)**2 + ((y - yc) / s)**2))
 
 def _example_rate_map(sigma=0.05*np.ones(7), spacing=0.3,
-        amplitude=np.ones(7),dpos=0):
+                      amplitude=np.ones(7),dpos=0):
 
     x = np.linspace(0,1,50)
     y = np.linspace(0,1,50)
@@ -30,7 +30,7 @@ def test_separate_fields():
     rm = np.zeros((6,6))
     bins = np.array([[1,1],[2,3],[1,4],[3,1],[4,4]])
     pos = (bins + 0.5)/[6,6]
-    
+
     for (i,j) in bins:
         rm[i,j] = 1
 
@@ -57,7 +57,7 @@ def test_find_avg_dist():
 
     avg_dist = find_avg_dist(rate_map, )
     target = 0.3
-    assert abs(avg_dist-target)/target < 0.02 
+    assert abs(avg_dist-target)/target < 0.02
 
     # rate_map = np.random.rand(50, 50)
     # running with bad data should give nan maybe?
@@ -71,7 +71,7 @@ def test_fit_hex():
     bump_centers = [pos]
     spacing = 0.3
     a0 = np.pi/3
-    
+
     for a in np.linspace(0,2*np.pi,7)[:-1]:
         bump_centers.append(pos+[spacing*f(a+a0) for f in[np.cos,np.sin]])
 
@@ -98,13 +98,13 @@ def test_calculate_grid_geometry():
     except TypeError as err:
         msg = "fit_hex() got an unexpected keyword argument 'a'"
         assert err.args[0] == msg
-    
+
     # import warnings
     # with warnings.catch_warnings(record=True) as w:
     #     a,b,c,d = calculate_grid_geometry(np.zeros((5,5)))
     #     msg = 'couldnt find bump centers, returning None'
 
-    #     assert msg == str( w[-1].message ) 
+    #     assert msg == str( w[-1].message )
     #     assert a==b==c==d==None
 
 
@@ -118,4 +118,3 @@ if __name__ == "__main__":
     test_find_avg_dist()
     test_fit_hex()
     test_calculate_grid_geometry()
-    
