@@ -482,38 +482,45 @@ def make_test_grid_spike_path(t_stop=10*pq.min, dt=1/(30*pq.Hz), box_xlen=1*pq.m
                                                  box_ylen=box_ylen)
     box_xlen = box_xlen.rescale('m').magnitude
     box_ylen = box_ylen.rescale('m').magnitude
-    ny, nx = rate_map.shape
     rate_map = rate_map > 0.1
+    ny, nx = rate_map.shape
     xref = np.linspace(0, box_xlen, nx)
     yref = np.linspace(0, box_ylen, ny)
     t_stop = t_stop.rescale('s').magnitude
     dt = dt.rescale('s').magnitude
     time = np.arange(0, t_stop, dt)
 
-    def speed_good(x1, y1, x2, y2, threshold=1):
+    def speed_good(x1, y1, x2, y2, threshold=1.5):
+        if any(x is None for x in [x1, y1, x2, y2]):
+            return False
         return (np.sqrt((x2 - x1)**2 + (y2 - y1)**2)) / dt < threshold
-    x = [0]
-    y = [0]
-    spikes = []
+    x, y, spikes = [0], [0], []
     while len(x) < len(time):
-        x2 = np.random.uniform(0, 1, 1) * box_xlen
-        y2 = np.random.uniform(0, 1, 1) * box_ylen
-        if speed_good(x[-1], y[-1], x2, y2):
-            x.append(x2)
-            y.append(y2)
-            xdiff = xref - x2
-            xdiff[xdiff < 0] = np.inf
-            xidx = np.argmin(xdiff)
-            ydiff = yref - y2
-            ydiff[ydiff < 0] = np.inf
+        x2, y2 = None, None
+        while not speed_good(x[-1], y[-1], x2, y2):
+            x2, y2 = np.random.uniform(0, 1, 2)
+            x2, y2 = x2 * box_xlen, y2 * box_ylen
+        x.append(x2)
+        y.append(y2)
+        if in_rate_map(rate_map, x2, y2, xref, yref):
             curr_t = time[len(x) - 1]
-            yidx = np.argmin(ydiff)
-            if rate_map[yidx, xidx]:
-                st = hpp(rate=30.0 * pq.Hz, t_start=curr_t * pq.s,
-                         t_stop=(curr_t + dt) * pq.s)
-                spikes.extend(st.times.magnitude.tolist())
+            st = hpp(rate=30.0 * pq.Hz, t_start=curr_t * pq.s,
+                     t_stop=(curr_t + dt) * pq.s)
+            spikes.extend(st.times.magnitude.tolist())
+
 
     return x, y, time, spikes
+
+
+def in_rate_map(rate_map, x, y, xref, yref):
+    assert rate_map.dtype == bool
+    xdiff = xref - x
+    xdiff[xdiff < 0] = np.inf
+    xidx = np.argmin(xdiff)
+    ydiff = yref - y
+    ydiff[ydiff < 0] = np.inf
+    yidx = np.argmin(ydiff)
+    return rate_map[yidx, xidx]
 
 
 def gaussian2D_asym(pos, amplitude, xc, yc, sigma_x, sigma_y, theta):
