@@ -19,19 +19,26 @@ def _cut_to_same_len(*args):
 
 
 def monotonously_increasing(var):
-    return all(x < y for x, y in zip(var, var[1:]))
+    return np.all(var[1:] > var[:-1])
 
 
-def remove_eqal_times(time, *args):
-    idxs, = np.where([x == y for x, y in zip(time, time[1:])])
+def remove_equal_times(time, *args):
+    idxs, = np.where(time[:-1] == time[1:])
     out = []
     for arg in args:
         out.append(np.delete(arg, idxs + 1))
     return np.delete(time, idxs + 1), out
 
 
+def remove_eqal_times(time, *args):
+    """DEPRECATED"""
+    import warnings
+    warnings.warn("function is deprecated due to misspelling. Please use remove_equal_times instead", DeprecationWarning)
+    return remove_equal_times(time, *args)
+
+
 def remove_smaller_times(time, *args):
-    idxs, = np.where([x > y for x, y in zip(time, time[1:])])
+    idxs, = np.where(time[:-1] > time[1:])
     out = []
     for arg in args:
         out.append(np.delete(arg, idxs + 1))
@@ -100,7 +107,7 @@ def fix_nonmonotonous_timestamps(x, y, t):
         import warnings
         warnings.warn('Time is not monotonously increasing, ' +
                       'removing equal and smaller timestamps.')
-        t, (x, y) = remove_eqal_times(t, x, y)
+        t, (x, y) = remove_equal_times(t, x, y)
         if min(t) != t[0]:
             idx = np.where(t == min(t))
             t = t[idx:]
