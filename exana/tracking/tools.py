@@ -19,10 +19,14 @@ def _cut_to_same_len(*args):
 
 
 def monotonously_increasing(var):
+    if not isinstance(var, np.ndarray):
+        var = np.array(var)
     return np.all(var[1:] > var[:-1])
 
 
 def remove_equal_times(time, *args):
+    if not isinstance(time, np.ndarray):
+        time = np.array(time)
     idxs, = np.where(time[:-1] == time[1:])
     out = []
     for arg in args:
@@ -38,6 +42,8 @@ def remove_eqal_times(time, *args):
 
 
 def remove_smaller_times(time, *args):
+    if not isinstance(time, np.ndarray):
+        time = np.array(time)
     idxs, = np.where(time[:-1] > time[1:])
     out = []
     for arg in args:
