@@ -57,7 +57,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     y = y.rescale('m').magnitude
 
     # interpolate one extra timepoint
-    t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))]) * pq.s
+    t_ = np.append(t, t[-1] + np.median(np.diff(t))) * pq.s
     spikes_in_bin, _ = np.histogram(sptr, t_)
     time_in_bin = np.diff(t_.magnitude)
     xbins = np.arange(0, box_xlen + binsize, binsize)
