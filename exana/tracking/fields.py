@@ -808,13 +808,13 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
     ...     rate_map[i,j] = 1
     ...
     >>> calculate_grid_geometry(rate_map)
-    (array([[ 0.5,  0.9],
-           [ 0.9,  0.7],
-           [ 0.1,  0.7],
-           [ 0.5,  0.5],
-           [ 0.9,  0.3],
-           [ 0.1,  0.3],
-           [ 0.5,  0.1]]) * m, 0.44721359549995793, 0.0, 26.565051177077983)
+    (array([[0.5, 0.9],
+           [0.9, 0.7],
+           [0.1, 0.7],
+           [0.5, 0.5],
+           [0.9, 0.3],
+           [0.1, 0.3],
+           [0.5, 0.1]]) * m, 0.4472135954999579, 0.0, 26.565051177077983)
     """
 
     from scipy.ndimage import mean, center_of_mass
