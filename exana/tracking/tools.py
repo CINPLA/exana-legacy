@@ -311,6 +311,40 @@ def angle_between_vectors(v1, v2):
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
 
+def rescale_linear_track_2d_to_1d_pca(x, y):
+    """ Take x, y coordinates of linear track data, rescale to 1-d.
+        by using the first component of pca
+
+    Parameters
+    ----------
+    x : quantities.Quantity array in m
+        1d vector of x positions
+    y : quantities.Quantity array in m
+        1d vector of x positions
+
+    Returns
+    -------
+    out : 1d vector
+    """
+    from sklearn.decomposition import PCA
+    from exana.misc.tools import is_quantities
+    if not all([len(var) == len(var2) for var in
+                [x, y] for var2 in [x, y]]):
+        raise ValueError('x, y, t must have same number of elements')
+    is_quantities([x, y], 'vector')
+    x = x.rescale('m').magnitude
+    y = y.rescale('m').magnitude
+
+    X = np.hstack((x[:, np.newaxis], y[:, np.newaxis]))
+    pca_obj = PCA(n_components=1)
+    pca_obj.fit(X)
+    x_rot =  pca_obj.transform(X)
+    x_rot -= np.min(x_rot)
+    x_rot = x_rot.flatten()
+    x_rot = x_rot * pq.m
+    return x_rot
+
+
 def rescale_linear_track_2d_to_1d(x, y, end_0=[], end_1=[]):
     """ Take x, y coordinates of linear track data, rescale to 1-d.
 
