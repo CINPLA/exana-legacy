@@ -4,7 +4,9 @@ import quantities as pq
 
 def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
                      box_ylen=1*pq.m, mask_unvisited=True, convolve=True,
-                     return_bins=False, smoothing=0.02):
+                     return_bins=False, smoothing=0.02,
+                     convolve_spikes_and_time=False):
+
     """Divide a 2D space in bins of size binsize**2, count the number of spikes
     in each bin and divide by the time spent in respective bins. The map can
     then be convolved with a gaussian kernel of size csize determined by the
@@ -27,6 +29,16 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
         mask bins which has not been visited by nans
     convolve : bool
         convolve the rate map with a 2D Gaussian kernel
+    convolve_spikes_and_time : bool
+        use method described in [1], applying the  2D Gaussian kernel
+        on the position and time bins before calculating rates. default
+        False 
+
+    References
+    ----------
+    [1] : Solstad, T and Boccara, C. N. and Kropff, E. and Moser, M. and
+    Moser, E. I. Representation of Geometric Borders in the Entorhinal
+        Cortex. Science, 322, 1865--1868, DOI 10.1126/science.1166466.
 
     Returns
     -------
@@ -69,12 +81,21 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     for n in range(len(x)):
         spike_pos[ix[n], iy[n]] += spikes_in_bin[n]
         time_pos[ix[n], iy[n]] += time_in_bin[n]
+
     # correct for shifting of map
     spike_pos = spike_pos[1:, 1:]
     time_pos = time_pos[1:, 1:]
+
+    if convolve and convolve_spikes_and_time:
+        from astropy.convolution import Gaussian2DKernel, convolve_fft
+        csize = (box_xlen / binsize) * smoothing
+        kernel = Gaussian2DKernel(csize)
+        spike_pos = convolve_fft(spike_pos, kernel)  
+        time_pos  = convolve_fft(time_pos, kernel)  
+
     with np.errstate(divide='ignore', invalid='ignore'):
         rate = np.divide(spike_pos, time_pos)
-    if convolve:
+    if convolve and not convolve_spikes_and_time:
         rate[np.isnan(rate)] = 0.  # for convolution
         from astropy.convolution import Gaussian2DKernel, convolve_fft
         csize = (box_xlen / binsize) * smoothing
