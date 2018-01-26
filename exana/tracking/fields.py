@@ -104,6 +104,8 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     if mask_unvisited:
         was_in_bin = np.asarray(time_pos, dtype=bool)
         rate[np.invert(was_in_bin)] = np.nan
+    else:
+        rate[np.isnan(rate)] = 0.  
     if return_bins:
         return rate.T, xbins, ybins
     else:
