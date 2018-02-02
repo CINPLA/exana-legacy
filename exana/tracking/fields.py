@@ -74,8 +74,8 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     time_in_bin = np.diff(t_.magnitude)
     xbins = np.arange(0, box_xlen + binsize, binsize)
     ybins = np.arange(0, box_ylen + binsize, binsize)
-    ix = np.digitize(x, xbins, right=True)
-    iy = np.digitize(y, ybins, right=True)
+    ix = np.digitize(x, xbins, right=False)
+    iy = np.digitize(y, ybins, right=False)
     spike_pos = np.zeros((xbins.size, ybins.size))
     time_pos = np.zeros((xbins.size, ybins.size))
     for n in range(len(x)):
@@ -906,7 +906,7 @@ class RandomDisplacementBounds(object):
 
 
 
-def optimize_sep_fields(rate_map,step = 0.04, niter=40, T = 1.0, method = 'SLSQP',
+def optimize_field_separation(rate_map,step = 0.04, niter=40, T = 1.0, method = 'SLSQP',
         glob=True, x0 = [0.065,0.1],callback=None):
     """Optimizes the separation of the fields by minimizing an error
     function
