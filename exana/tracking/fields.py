@@ -5,12 +5,14 @@ import quantities as pq
 def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
                      box_ylen=1*pq.m, mask_unvisited=True, convolve=True,
                      return_bins=False, smoothing=0.02,
-                     convolve_spikes_and_time=False):
+                     convolve_spikes_and_time=True):
 
     """Divide a 2D space in bins of size binsize**2, count the number of spikes
     in each bin and divide by the time spent in respective bins. The map can
     then be convolved with a gaussian kernel of size csize determined by the
-    smoothing factor, binsize and box_xlen.
+    smoothing factor, binsize and box_xlen. If convolve_spikes_and_time is
+    used, the number of spikes per bin and time spent is convolved instead
+    of the rate map.
 
     Parameters
     ----------
@@ -85,7 +87,6 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     # correct for shifting of map
     spike_pos = spike_pos[1:, 1:]
     time_pos = time_pos[1:, 1:]
-
     if convolve and convolve_spikes_and_time:
         from astropy.convolution import Gaussian2DKernel, convolve_fft
         csize = (box_xlen / binsize) * smoothing
@@ -416,7 +417,8 @@ def spatial_rate_map_1d(x, t, sptr,
                         mask_unvisited=True,
                         convolve=True,
                         return_bins=False,
-                        smoothing=0.02):
+                        smoothing=0.02, 
+                        convolve_spikes_and_time=True):
     """Take x coordinates of linear track data, divide in bins of binsize,
     count the number of spikes  in each bin and  divide by the time spent in
     respective bins. The map can then be convolved with a gaussian kernel of
@@ -437,6 +439,16 @@ def spatial_rate_map_1d(x, t, sptr,
         mask bins which has not been visited by nans
     convolve : bool
         convolve the rate map with a 2D Gaussian kernel
+    convolve_spikes_and_time : bool
+        use method described in [1], applying the  1D Gaussian kernel
+        on the position and time bins before calculating rates. default
+        False 
+
+    References
+    ----------
+    [1] : Solstad, T and Boccara, C. N. and Kropff, E. and Moser, M. and
+    Moser, E. I. Representation of Geometric Borders in the Entorhinal
+        Cortex. Science, 322, 1865--1868, DOI 10.1126/science.1166466.
 
     Returns
     -------
@@ -468,7 +480,7 @@ def spatial_rate_map_1d(x, t, sptr,
     spikes_in_bin, _ = np.histogram(sptr, t_)
     time_in_bin = np.diff(t_.magnitude)
     xbins = np.arange(0, track_len + binsize, binsize)
-    ix = np.digitize(x, xbins, right=True)
+    ix = np.digitize(x, xbins, right=False)
     spike_pos = np.zeros(xbins.size)
     time_pos = np.zeros(xbins.size)
     for n in range(len(x)):
@@ -477,13 +489,20 @@ def spatial_rate_map_1d(x, t, sptr,
     # correct for shifting of map since digitize returns values at right edges
     spike_pos = spike_pos[1:]
     time_pos = time_pos[1:]
+
+    if convolve and convolve_spikes_and_time:
+        from astropy.convolution import Gaussian1DKernel, convolve_fft
+        csize = (track_len / binsize) * smoothing
+        kernel = Gaussian1DKernel(csize)
+        spike_pos = convolve_fft(spike_pos, kernel)  
+        time_pos  = convolve_fft(time_pos, kernel)  
     with np.errstate(divide='ignore', invalid='ignore'):
         rate = np.divide(spike_pos, time_pos)
-    if convolve:
+    if convolve and not convolve_spikes_and_time:
         rate[np.isnan(rate)] = 0.  # for convolution
-        from astropy.convolution import Gaussian2DKernel, convolve_fft
+        from astropy.convolution import Gaussian1DKernel, convolve_fft
         csize = (track_len / binsize) * smoothing
-        kernel = Gaussian2DKernel(csize)
+        kernel = Gaussian1DKernel(csize)
         rate = convolve_fft(rate, kernel)  # TODO edge correction
     if mask_unvisited:
         was_in_bin = np.asarray(time_pos, dtype=bool)
