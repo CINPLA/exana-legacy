@@ -78,6 +78,13 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     ybins = np.arange(0, box_ylen + binsize, binsize)
     ix = np.digitize(x, xbins, right=False)
     iy = np.digitize(y, ybins, right=False)
+
+    # cheap fix for boundaries:
+    sx = xbins.size 
+    sy = ybins.size
+    ix[ix==sx] = sx-1
+    iy[iy==sy] = sy-1
+
     spike_pos = np.zeros((xbins.size, ybins.size))
     time_pos = np.zeros((xbins.size, ybins.size))
     for n in range(len(x)):
@@ -481,6 +488,11 @@ def spatial_rate_map_1d(x, t, sptr,
     time_in_bin = np.diff(t_.magnitude)
     xbins = np.arange(0, track_len + binsize, binsize)
     ix = np.digitize(x, xbins, right=False)
+
+    # cheap fix for boundaries:
+    rate_size = xbins.size 
+    ix[ix==rate_size] = rate_size-1
+
     spike_pos = np.zeros(xbins.size)
     time_pos = np.zeros(xbins.size)
     for n in range(len(x)):
