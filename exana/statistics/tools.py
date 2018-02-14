@@ -114,6 +114,7 @@ def fano_factor(trials, bins=1, return_mean_var=False, return_bins=False):
        quenches neural variability: a widespread cortical phenomenon. Nature
        neuroscience, 13(3), 369-378.
     """
+    # TODO matching
     assert len(trials) > 0, 'trials cannot be empty'
     if isinstance(trials[0], neo.SpikeTrain):
         trials = [trial.times for trial in trials]
@@ -200,7 +201,6 @@ def fano_factor_multiunit(unit_trials, bins=1, return_rates=False,
     0.92, 0.041
     '''
     from scipy.stats import linregress
-    dim = 's'
     if isinstance(bins, int):
         nbins = bins
     else:
@@ -508,6 +508,151 @@ def stat_test(tdict, test_func=None, nan_rule='remove', stat_key='statistic'):
     return pd.DataFrame([ps, sts], index=['p-value', stat_key])
 
 
+def poisson_continuity_correction(n, rate):
+    """
+    n : Likelihood to observe n or more events
+    rate : float
+        Rate of Poisson process
+
+    References
+    ----------
+    Stark, E., & Abeles, M. (2009). Unbiased estimation of precise temporal
+    correlations between spike trains. Journal of neuroscience methods, 179(1),
+    90-100.
+    """
+    from scipy.stats import poisson
+    assert np.all(n >= 0)
+    return_arr = np.zeros(n.shape)
+    for i, n_i in enumerate(n):
+        if n_i == 0:
+            return_arr[i] = 1.
+        else:
+            rates = [poisson.pmf(j, rate) for j in range(int(n_i))]
+            return_arr[i] = 1 - np.sum(rates) - 0.5 * poisson.pmf(n_i, rate)
+    return return_arr
+
+
+def hollow_kernel(kernlen, width, hollow_fraction=0.6, kerntype='gaussian'):
+    '''
+    Returns a hollow kernel normalized to it's sum
+
+    Parameters
+    ----------
+    kernlen : int
+        Length of kernel, must be uneven (kernlen % 2 == 1)
+    width : float
+        Width of kernel (std if gaussian)
+    hollow_fraction : float
+        Fractoin of the central bin to removed.
+
+    Returns
+    -------
+    kernel : array
+    '''
+    if kerntype == 'gaussian':
+        from scipy.signal import gaussian
+        assert kernlen % 2 == 1
+        kernel = gaussian(kernlen, width)
+        kernel[int(kernlen / 2.)] *= (1 - hollow_fraction)
+    else:
+        raise NotImplementedError
+    return kernel / sum(kernel)
+
+
+def ccg(t1, t2=None, binsize=1*pq.ms, limit=100*pq.ms, auto=False, density=None,
+        **kwargs):
+    '''
+    Wrapper for cross_correlation_histogram from elephant.
+
+    Note
+    ----
+    returns bins at right edges
+    '''
+    import elephant.spike_train_correlation as corr
+    import elephant.conversion as conv
+    if auto: t2 = t1
+    cch, bin_ids = corr.cross_correlation_histogram(
+        conv.BinnedSpikeTrain(t1, binsize),
+        conv.BinnedSpikeTrain(t2, binsize),
+        window=[-limit, limit],
+        **kwargs)
+    bins = cch.times
+    cch = cch.magnitude.flatten()
+    if auto:
+        # Compensate for the peak at time zero that results in autocorrelations
+        # by subtracting the total number of spikes from that bin. Note
+        # possible numerical issue here because 0.0 may fall at a bin edge.
+        c_temp, bins_temp = np.histogram([0.], bins=bins)
+        bin_containing_zero = np.nonzero(c_temp)[0][0]
+        cch[bin_containing_zero] = 0
+    return cch, bins
+
+
+def ccg_significance(t1, t2, binsize, limit, hollow_fraction, width,
+                     kerntype='gaussian'):
+    """
+    Parameters
+    ---------
+    t1 : np.array, or neo.SpikeTrain
+        First spiketrain, raw spike times in seconds.
+    t2 : np.array, or neo.SpikeTrain
+        Second spiketrain, raw spike times in seconds.
+    binsize : float, or quantities.Quantity
+        Width of each bar in histogram in seconds.
+    limit : float, or quantities.Quantity
+        Positive and negative extent of histogram, in seconds.
+    kernlen : int
+        Length of kernel, must be uneven (kernlen % 2 == 1)
+    width : float
+        Width of kernel (std if gaussian)
+    hollow_fraction : float
+        Fractoin of the central bin to removed.
+
+    References
+    ----------
+    Stark, E., & Abeles, M. (2009). Unbiased estimation of precise temporal
+    correlations between spike trains. Journal of neuroscience methods, 179(1),
+    90-100.
+    English et al. 2017, Neuron, Pyramidal Cell-Interneuron Circuit Architecture
+    and Dynamics in Hippocampal Networks
+    """
+    import scipy.signal as scs
+    ccg, bins = correlogram(t1, t2, binsize=binsize, limit=limit,
+                            density=False)
+    kernlen = len(ccg) - 1
+    kernel = hollow_kernel(kernlen, width, hollow_fraction, kerntype)
+    # padd edges
+    len_padd = int(kernlen / 2.)
+    ccg_padded = np.zeros(len(ccg) + 2 * len_padd)
+    # "firstW/2 bins (excluding the very first bin) are duplicated,
+    # reversed in time, and prepended to the ccg prior to convolving"
+    ccg_padded[0:len_padd] = ccg[1:len_padd+1][::-1]
+    ccg_padded[len_padd: - len_padd] = ccg
+    # # "Likewise, the lastW/2 bins aresymmetrically appended to the ccg."
+    ccg_padded[-len_padd:] = ccg[-len_padd-1:-1][::-1]
+    # convolve ccg with kernel
+    ccg_smoothed = scs.fftconvolve(ccg_padded, kernel, mode='valid')
+    pfast = np.zeros(ccg.shape)
+    assert len(ccg) == len(ccg_smoothed)
+    for m, (val_m, rate_m) in enumerate(zip(ccg, ccg_smoothed)):
+        pfast[m] = poisson_continuity_correction(np.array([val_m]), rate_m)
+    # pcausal describes the probability of obtaining a peak on one side
+    # of the histogram, that is signficantly larger than the largest peak
+    # in the anticausal direction. we leave the zero peak empty
+    pcausal = np.zeros(ccg.shape)
+    ccg_half_len = int(np.floor(len(ccg) / 2.))
+    max_pre = np.max(ccg[:ccg_half_len])
+    max_post = np.max(ccg[ccg_half_len:])
+    for m, val_m in enumerate(ccg):
+        if m < ccg_half_len:
+            pcausal[m] = poisson_continuity_correction(
+                np.array([val_m]), max_post)
+        if m > ccg_half_len:
+            pcausal[m] = poisson_continuity_correction(
+                np.array([val_m]), max_pre)
+    return pcausal, pfast, bins
+
+
 def correlogram(t1, t2=None, binsize=.001, limit=.02, auto=False,
                 density=False):
     """Return crosscorrelogram of two spike trains.
@@ -521,19 +666,19 @@ def correlogram(t1, t2=None, binsize=.001, limit=.02, auto=False,
 
     Parameters
     ---------
-        t1 : np.array, or neo.SpikeTrain
-            First spiketrain, raw spike times in seconds.
-        t2 : np.array, or neo.SpikeTrain
-            Second spiketrain, raw spike times in seconds.
-        binsize : float, or quantities.Quantity
-            Width of each bar in histogram in seconds.
-        limit : float, or quantities.Quantity
-            Positive and negative extent of histogram, in seconds.
-        auto : bool
-            If True, then returns autocorrelogram of `t1` and in
-            this case `t2` can be None. Default is False.
-        density : bool
-            If True, then returns the probability density function.
+    t1 : np.array, or neo.SpikeTrain
+        First spiketrain, raw spike times in seconds.
+    t2 : np.array, or neo.SpikeTrain
+        Second spiketrain, raw spike times in seconds.
+    binsize : float, or quantities.Quantity
+        Width of each bar in histogram in seconds.
+    limit : float, or quantities.Quantity
+        Positive and negative extent of histogram, in seconds.
+    auto : bool
+        If True, then returns autocorrelogram of `t1` and in
+        this case `t2` can be None. Default is False.
+    density : bool
+        If True, then returns the probability density function.
 
     See also
     --------
@@ -541,9 +686,9 @@ def correlogram(t1, t2=None, binsize=.001, limit=.02, auto=False,
 
     Returns
     -------
-        (count, bins) : tuple
-            a tuple containing the bin edges (in seconds) and the
-            count of spikes in each bin.
+    (count, bins) : tuple
+        A tuple containing the bin right edges and the
+        count/density of spikes in each bin.
 
     Note
     ----
@@ -576,18 +721,20 @@ def correlogram(t1, t2=None, binsize=.001, limit=.02, auto=False,
     >>> np.array_equal(counts2, counts)
     True
     """
-    if isinstance(t1, neo.SpikeTrain):
-        t1 = t1.times.rescale('s').magnitude
-    if isinstance(t2, neo.SpikeTrain):
-        t2 = t2.times.rescale('s').magnitude
-    if isinstance(binsize, pq.Quantity):
-        binsize = binsize.rescale('s').magnitude
-    if isinstance(limit, pq.Quantity):
-        limit = limit.rescale('s').magnitude
+    if auto: t2 = t1
+    lot = [t1, t2, limit, binsize]
+    if any(isinstance(a, pq.Quantity) for a in lot):
+        if not all(isinstance(a, pq.Quantity) for a in lot):
+            raise ValueError('If any is quantity all must be ' +
+                             '{}'.format([type(d) for d in lot]))
+        dim = t1.dimensionality
+        t1, t2, limit, binsize = [a.rescale(dim).magnitude for a in lot]
     # For auto-CCGs, make sure we use the same exact values
     # Otherwise numerical issues may arise when we compensate for zeros later
-    if auto: t2 = t1
-
+    if not int(limit * 1e10) % int(binsize * 1e10) == 0:
+        raise ValueError('Time limit {} must be a '.format(limit) +
+                         'multiple of binsize {}'.format(binsize) +
+                         ' remainder = {}'.format(limit % binsize))
     # For efficiency, `t1` should be no longer than `t2`
     swap_args = False
     if len(t1) > len(t2):
@@ -633,4 +780,4 @@ def correlogram(t1, t2=None, binsize=.001, limit=.02, auto=False,
         # possible because of the way `bins` was defined (bins = -bins[::-1])
         count = count[::-1]
 
-    return count, bins
+    return count, bins[1:]

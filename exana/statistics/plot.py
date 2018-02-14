@@ -7,7 +7,7 @@ from ..misc.plot import simpleaxis
 
 
 def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=None,
-                         output='counts', edgecolor='k', alpha=1., ylabel=None,
+                         output='counts', edgecolor=None, alpha=1., ylabel=None,
                          nbins=None):
     """
     Raster plot of trials
@@ -64,7 +64,7 @@ def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=None,
     ### TODO
     if bins is not None:
         assert isinstance(bins, int)
-        warnins.warn('The variable "bins" is deprecated, use nbins in stead.')
+        warnings.warn('The variable "bins" is deprecated, use nbins in stead.')
         nbins = bins
     ###
     if ax is None:
@@ -162,7 +162,8 @@ def plot_isi_hist(sptr, alpha=1, ax=None, binsize=2*pq.ms,
 def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
                density=True, alpha=1., gs=None, binsize=1*pq.ms,
                time_limit=1*pq.s, split_colors=True, xcolor='k',
-               xedgecolor='k'):
+               xedgecolor='k', xticksvisible=True, yticksvisible=True,
+               acorr=True, ylim=None):
     """
     Bar plot of crosscorrelation of multiple spiketrians
 
@@ -188,6 +189,12 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
         color of crosscorrelations
     xedgecolor : str
         edgecolor of crosscorrelations
+    xticksvisible : bool
+        show xtics on crosscorrelations, (True by default)
+    yticksvisible : bool
+        show ytics on crosscorrelations, (True by default)
+    acorr : bool
+        show autocorrelations, (True by default)
 
     Examples
     --------
@@ -216,7 +223,6 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
     -------
     out : fig
     """
-    # TODO sharex
     if isinstance(spike_trains, neo.SpikeTrain):
         spike_trains = [spike_trains]
     elif not isinstance(spike_trains, list):
@@ -228,9 +234,6 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
             'neo.SpikeTrains.')
     from .tools import correlogram
     import matplotlib.gridspec as gridspec
-    dim = spike_trains[0].times.dimensionality
-    binsize = binsize.rescale(dim).magnitude
-    time_limit = time_limit.rescale(dim).magnitude
     if colors is None:
         from matplotlib.pyplot import cm
         colors = cm.rainbow(np.linspace(0, 1, len(spike_trains)))
@@ -249,13 +252,18 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
         gs0 = gridspec.GridSpec(nrc, nrc)
     else:
         gs0 = gridspec.GridSpecFromSubplotSpec(nrc, nrc, subplot_spec=gs)
-    axs = []
+    axs, cnt = [], 0
     for x in range(nrc):
         for y in range(nrc):
             if (y > x) or (y == x):
-                ax = fig.add_subplot(gs0[x, y])
+                if not acorr and y == x:
+                    continue
+                prev_ax = None if len(axs) == 0 else axs[cnt-1]
+                ax = fig.add_subplot(gs0[x, y], sharex=prev_ax, sharey=prev_ax)
                 axs.append(ax)
-
+            if y > x:
+                plt.setp(ax.get_xticklabels(), visible=xticksvisible)
+                plt.setp(ax.get_yticklabels(), visible=yticksvisible)
     cnt = 0
     for x in range(nrc):
         for y in range(nrc):
@@ -264,39 +272,40 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
                 sptr2 = spike_trains[y]
 
                 count, bins = correlogram(
-                    t1=sptr1.times.rescale(dim).magnitude,
-                    t2=sptr2.times.rescale(dim).magnitude,
+                    t1=sptr1,
+                    t2=sptr2,
                     binsize=binsize, limit=time_limit,  auto=False,
                     density=density)
                 if split_colors:
                     c1, c2 = colors[x], colors[y]
                     e1, e2 = edgecolors[x], edgecolors[y]
-                    c1_n = sum(bins < 0) + 2 # TODO will + 2 always be right?
+                    c1_n = sum(bins <= 0)
                     c2_n = len(bins) - c1_n
                     cs = [c1] * c1_n + [c2] * c2_n
                     es = [e1] * c1_n + [e2] * c2_n
                 else:
                     cs, es = xcolor, xedgecolor
-                axs[cnt].bar(bins[1:], count,
-                             width=binsize, color=cs,
+                axs[cnt].bar(bins, count, align='edge',
+                             width=-binsize, color=cs,
                              edgecolor=es)
                 axs[cnt].set_xlim([-time_limit, time_limit])
                 name1 = sptr1.name or 'idx {}'.format(x)
                 name2 = sptr2.name or 'idx {}'.format(y)
                 axs[cnt].set_xlabel(name1 + ' ' + name2)
                 cnt += 1
-            elif y == x:
+            elif y == x and acorr:
                 sptr = spike_trains[x]
                 count, bins = correlogram(
-                    t1=sptr.times.rescale(dim).magnitude, t2=None,
+                    t1=sptr, t2=None,
                     binsize=binsize, limit=time_limit,
                     auto=True, density=density)
-                axs[cnt].bar(bins[1:], count, width=binsize,
+                axs[cnt].bar(bins, count, width=-binsize, align='edge',
                              color=colors[x], edgecolor=edgecolors[x])
                 axs[cnt].set_xlim([-time_limit, time_limit])
                 name = sptr.name or 'idx {}'.format(x)
                 axs[cnt].set_xlabel(name)
                 cnt += 1
+    if ylim is not None: axs[0].set_ylim(ylim)
     plt.tight_layout()
     return fig
 

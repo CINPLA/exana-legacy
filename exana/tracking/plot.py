@@ -122,7 +122,7 @@ def plot_head_direction_rate(sptr, ang_bins, rate_in_ang, projection='polar',
     elif projection == 'polar':
         ang_bins = [math.radians(deg) for deg in ang_bins] * pq.radians
         binsize = math.radians(binsize) * pq.radians
-        ax.set_xticks([0, np.pi])
+        ax.set_xticks([0, 2*np.pi])
     ax.bar(ang_bins, rate_in_ang, width=binsize, color=color)
     return ax
 
