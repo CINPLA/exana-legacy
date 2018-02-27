@@ -650,7 +650,7 @@ def ccg_significance(t1, t2, binsize, limit, hollow_fraction, width,
         if m > ccg_half_len:
             pcausal[m] = poisson_continuity_correction(
                 np.array([val_m]), max_pre)
-    return pcausal, pfast, bins
+    return pcausal, pfast, bins, ccg, ccg_smoothed
 
 
 def correlogram(t1, t2=None, binsize=.001, limit=.02, auto=False,
