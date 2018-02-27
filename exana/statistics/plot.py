@@ -265,6 +265,7 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
                 plt.setp(ax.get_xticklabels(), visible=xticksvisible)
                 plt.setp(ax.get_yticklabels(), visible=yticksvisible)
     cnt = 0
+    ccgs = []
     for x in range(nrc):
         for y in range(nrc):
             if y > x:
@@ -276,6 +277,7 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
                     t2=sptr2,
                     binsize=binsize, limit=time_limit,  auto=False,
                     density=density)
+                ccgs.append(count)
                 if split_colors:
                     c1, c2 = colors[x], colors[y]
                     e1, e2 = edgecolors[x], edgecolors[y]
@@ -299,6 +301,7 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
                     t1=sptr, t2=None,
                     binsize=binsize, limit=time_limit,
                     auto=True, density=density)
+                ccgs.append(count)
                 axs[cnt].bar(bins, count, width=-binsize, align='edge',
                              color=colors[x], edgecolor=edgecolors[x])
                 axs[cnt].set_xlim([-time_limit, time_limit])
@@ -307,7 +310,7 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
                 cnt += 1
     if ylim is not None: axs[0].set_ylim(ylim)
     plt.tight_layout()
-    return fig
+    return ccgs, bins
 
 
 def plot_autocorr(sptr, title='', color='k', edgecolor='k', ax=None,
