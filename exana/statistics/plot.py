@@ -163,7 +163,7 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
                density=True, alpha=1., gs=None, binsize=1*pq.ms,
                time_limit=1*pq.s, split_colors=True, xcolor='k',
                xedgecolor='k', xticksvisible=True, yticksvisible=True,
-               acorr=True, ylim=None):
+               acorr=True, ylim=None, names=None):
     """
     Bar plot of crosscorrelation of multiple spiketrians
 
@@ -223,15 +223,8 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
     -------
     out : fig
     """
-    if isinstance(spike_trains, neo.SpikeTrain):
+    if len(spike_trains) == 1:
         spike_trains = [spike_trains]
-    elif not isinstance(spike_trains, list):
-        raise TypeError('"spike_trains" must be neo.SpikeTrain or "list" of ' +
-                        'neo.SpikeTrains.')
-    else:
-        assert all(isinstance(s, neo.SpikeTrain) for s in spike_trains), (
-            '"spike_trains" must be neo.SpikeTrain or "list" of ' +
-            'neo.SpikeTrains.')
     from .tools import correlogram
     import matplotlib.gridspec as gridspec
     if colors is None:
@@ -244,6 +237,15 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
     elif not isinstance(edgecolors, list):
         edgecolors = [edgecolors] * len(spike_trains)
 
+    def get_name(sptr, idx):
+        if hasattr(sptr, 'name'):
+            name = sptr.name
+        elif names is not None:
+            assert len(names) == len(spike_trains)
+            name = names[idx]
+        else:
+            name = 'idx {}'.format(idx)
+        return name
     if fig is None:
         fig = plt.figure()
 
@@ -291,8 +293,8 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
                              width=-binsize, color=cs,
                              edgecolor=es)
                 axs[cnt].set_xlim([-time_limit, time_limit])
-                name1 = sptr1.name or 'idx {}'.format(x)
-                name2 = sptr2.name or 'idx {}'.format(y)
+                name1 = get_name(sptr1, x)
+                name2 = get_name(sptr2, y)
                 axs[cnt].set_xlabel(name1 + ' ' + name2)
                 cnt += 1
             elif y == x and acorr:
@@ -305,8 +307,8 @@ def plot_xcorr(spike_trains, colors=None, edgecolors=None, fig=None,
                 axs[cnt].bar(bins, count, width=-binsize, align='edge',
                              color=colors[x], edgecolor=edgecolors[x])
                 axs[cnt].set_xlim([-time_limit, time_limit])
-                name = sptr.name or 'idx {}'.format(x)
-                axs[cnt].set_xlabel(name)
+                name = get_name(sptr, x)
+                axs[cnt].set_xlabel(name + ' ' + name)
                 cnt += 1
     if ylim is not None: axs[0].set_ylim(ylim)
     plt.tight_layout()

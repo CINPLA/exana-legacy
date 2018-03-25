@@ -102,7 +102,8 @@ def plot_psth(spike_train=None, epoch=None, trials=None, xlim=[None, None],
               fig=None, axs=None, legend_loc=1, color='b',
               title='', stim_alpha=.2, stim_color=None,
               stim_label='Stim on', stim_style='patch', stim_offset=0*pq.s,
-              rast_ylabel='Trials', hist_color=None, hist_edgecolor=None,
+              rast_ylabel='Trials', rast_size=10,
+              hist_color=None, hist_edgecolor=None,
               hist_ylim=None,  hist_ylabel=None,
               hist_output='counts', hist_binsize=None, hist_nbins=100,
               hist_alpha=1.):
@@ -169,7 +170,8 @@ def plot_psth(spike_train=None, epoch=None, trials=None, xlim=[None, None],
                           ' in order to use stim_style "patch".')
             stim_style = 'line'
     # raster
-    plot_raster(trials, color=color, ax=rast_ax, ylabel=rast_ylabel)
+    plot_raster(trials, color=color, ax=rast_ax, ylabel=rast_ylabel,
+                marker_size=rast_size)
     # histogram
     hist_color = color if hist_color is None else hist_color
     hist_ylabel = hist_output if hist_ylabel is None else hist_ylabel
