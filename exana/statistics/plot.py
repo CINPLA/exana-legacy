@@ -10,7 +10,7 @@ def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=None,
                          output='counts', edgecolor=None, alpha=1., ylabel=None,
                          nbins=None):
     """
-    Raster plot of trials
+    histogram plot of trials
 
     Parameters
     ----------
@@ -96,7 +96,7 @@ def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=None,
     else:
         raise TypeError('ylabel must be str not "' + str(type(ylabel)) + '"')
     ax.bar(bs[:len(time_hist)], time_hist.magnitude.flatten(), width=bs[1]-bs[0],
-           edgecolor=edgecolor, facecolor=color, alpha=alpha)
+           edgecolor=edgecolor, facecolor=color, alpha=alpha, align='edge')
     return ax
 
 

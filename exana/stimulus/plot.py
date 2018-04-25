@@ -191,7 +191,7 @@ def plot_psth(spike_train=None, epoch=None, trials=None, xlim=[None, None],
         fill_stop = 0
         import matplotlib.lines as mlines
         line = mlines.Line2D([], [], color=stim_color, label=stim_label)
-    stim_offset = stim_offset.rescale('s').magnitude
+    stim_offset = stim_offset.rescale(dim).magnitude
     hist_ax.axvspan(stim_offset, fill_stop + stim_offset, color=stim_color,
                     alpha=stim_alpha, zorder=0)
     rast_ax.axvspan(stim_offset, fill_stop + stim_offset, color=stim_color,
