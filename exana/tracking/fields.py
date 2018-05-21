@@ -35,6 +35,17 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     out : rate map, xbins, ybins
     """
     from exana.misc.tools import is_quantities
+
+    if np.isnan(x).any() or np.isnan(y).any() or np.isnan(z).any():
+        print("WARNING: spatial_rate_map called with NaN values in x, y or t arrays. "
+              "These will be removed.")
+
+        # the & is the logical and operator, and ~ is the logical not operator
+        nan_indices = np.isnan(x) & np.isnan(y) & np.isnan(t)
+        x = x[~nan_indices]
+        y = y[~nan_indices]
+        t = t[~nan_indices]
+
     if not all([len(var) == len(var2) for var in [x,y,t] for var2 in [x,y,t]]):
         raise ValueError('x, y, t must have same number of elements')
     if box_xlen < x.max() or box_ylen < y.max():
