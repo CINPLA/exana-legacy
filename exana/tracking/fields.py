@@ -36,7 +36,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     """
     from exana.misc.tools import is_quantities
 
-    if np.isnan(x).any() or np.isnan(y).any() or np.isnan(z).any():
+    if np.isnan(x).any() or np.isnan(y).any() or np.isnan(t).any():
         print("WARNING: spatial_rate_map called with NaN values in x, y or t arrays. "
               "These will be removed.")
 
