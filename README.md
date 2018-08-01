@@ -16,6 +16,7 @@ Clone this repository and install with python
 
 ```
 git clone https://github.com/CINPLA/exana.git
+cd exana
 python setup.py develop
 ```
 **Alternative 2)**
