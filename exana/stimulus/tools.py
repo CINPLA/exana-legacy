@@ -145,10 +145,10 @@ def make_orientation_trials(trials, unit=pq.deg):
                               key=lambda x: _convert_string_to_quantity_scalar(x[0]).magnitude))
 
 
-def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None):
+def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
+                           dim=None):
     '''
     Makes trials based on an Epoch and given temporal bound
-
     Parameters
     ----------
     spike_train : neo.SpikeTrain, neo.Unit, numpy.array, quantities.Quantity
@@ -157,14 +157,41 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None):
         time before epochs, default is 0 s
     t_stop : quantities.Quantity
         time after epochs default is duration of epoch
-
+    dim : str
+        if spike_train is numpy.array, the unit must be provided, e.g. "s"
     Returns
     -------
     out : list of neo.SpikeTrains
     '''
+
+    if isinstance(spike_train, neo.Unit):
+        sptr = []
+        dim = unit.spiketrains[0].times.dimensionality
+        unit = unit.spiketrains[0].times.units
+        for st in unit.spiketrains:
+            sptr.append(spike_train.rescale(dim).magnitude)
+        sptr = np.sort(sptr) * unit
+    elif isinstance(spike_train, neo.SpikeTrain):
+        sptr = spike_train.times
+        dim = sptr.dimensionality
+        unit = sptr.units
+    elif isinstance(spike_train, pq.Quantity):
+        assert is_quantities(spike_train, 'vector')
+        sptr = spike_train
+        dim = sptr.dimensionality
+        unit = sptr.units
+    elif isinstance(spike_train, np.array):
+        sptr = spike_train * pq.Quantity(1, unit)
+        dim = sptr.dimensionality
+        unit = sptr.units
+    else:
+        raise TypeError('Expected (neo.Unit, neo.SpikeTrain, ' +
+                        'quantities.Quantity, numpy.array), got "' +
+                        str(type(spike_train)) + '"')
+
     from neo.core import SpikeTrain
     if t_start is None:
-        t_start = 0 * pq.s
+        t_start = 0 * unit
     if t_start.ndim == 0:
         t_starts = t_start * np.ones(len(epoch.times))
     else:
@@ -178,24 +205,7 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None):
         t_stops = t_stop
         assert len(epoch.times) == len(t_stops), 'epoch.times and t_stops have different size'
 
-    dim = 's'
 
-    if isinstance(spike_train, neo.Unit):
-        sptr = []
-        for st in unit.spiketrains:
-            sptr.append(spike_train.rescale(dim).magnitude)
-        sptr = np.sort(sptr) * pq.s
-    elif isinstance(spike_train, neo.SpikeTrain):
-        sptr = spike_train.times.rescale(dim)
-    elif isinstance(spike_train, pq.Quantity):
-        assert is_quantities(spike_train, 'vector')
-        sptr = spike_train.rescale(dim)
-    elif isinstance(spike_train, np.array):
-        sptr = spike_train * pq.s
-    else:
-        raise TypeError('Expected (neo.Unit, neo.SpikeTrain, ' +
-                        'quantities.Quantity, numpy.array), got "' +
-                        str(type(spike_train)) + '"')
     if not isinstance(epoch, neo.Epoch):
         raise TypeError('Expected "neo.Epoch" got "' + str(type(epoch)) + '"')
 
@@ -206,7 +216,7 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None):
         spikes = []
         for spike in sptr[(t+t_start < sptr) & (sptr < t+t_stop)]:
             spikes.append(spike-t)
-        trials.append(SpikeTrain(times=spikes * pq.s,
+        trials.append(SpikeTrain(times=spikes * unit,
                                  t_start=t_start,
                                  t_stop=t_stop))
     return trials
@@ -306,7 +316,7 @@ def epoch_overview(epo, period, expected_num_epochs=None):
     Parameters
     ----------
     epo : neo.Epoch
-    
+
     Returns
     -------
     out : neo.Epoch
