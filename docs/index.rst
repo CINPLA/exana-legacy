@@ -9,6 +9,7 @@ Exana is a python module for neuroscientific data analysis.
 
    installation
    developers_guide
+   examples
    authors
    modules
 
@@ -18,7 +19,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
-
-.. _Neo: http://packages.python.org/neo/
