@@ -32,9 +32,31 @@ conda install exana -c cinpla -c defaults -c conda-forge
 
 Please fork and send pull requests for contributions.
 
-Exana depends on `neo` and `numpy`, to keep the global dependencies to a minimum please import special dependencies inside functions. Please conform to pep8 and write docstrings in the [numpy style](http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html).
+### Requirements for code contributions
 
 Test your code as much as possible, and preferably make a proper test case runnable with [pytest](https://docs.pytest.org/en/latest/contents.html), as a minimum write runnable examples in the [docstring](https://docs.pytest.org/en/latest/doctest.html) e.g.
+
+Code contributions to exana need to adhere to the following requirements:
+
+- All added code needs to be useful to more than just you. If only you need the functionality in
+  your project, then add it to your project instead.
+- Each function needs to have a corresponding test.
+- Each function needs to have an example in the docstring.
+- Plotting functions must be placed in `examples`. Rationale: Everyone has an opinion on how to plot everything.
+    - Every function in examples must also be used in the documentation - see the `docs` folder.
+- Create specialized functions. Don't create one function that is general and takes 1000 parameters.
+  Make 1000 functions instead.
+- Prioritize functions over classes - that keeps the scope minimal.
+  Use classes only when you really need it for the data or the API.
+- Keep it simple. Sometimes it is better to be a bit verbose to make the logic simpler.
+  In other words, use simple functions and avoid classes if you can.
+- Avoid wrapping simple functions from other libraries to be "helpful".
+  Just show the function you wanted to wrap in your examples or docstrings instead.
+
+### Dependencies
+
+Exana depends on `neo` and `numpy`, to keep the global dependencies to a minimum please import special dependencies inside functions. Please conform to pep8 and write docstrings in the [numpy style](http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html).
+
 
 ```python
 def has_ten_spikes(spiketrain):
