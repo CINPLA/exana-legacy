@@ -2,7 +2,7 @@ import neo
 import numpy as np
 import matplotlib.pyplot as plt
 import quantities as pq
-from .tools import *
+from exana.tools import *
 from utils import simpleaxis
 from statistics_plot import (plot_spike_histogram)
 from general_plot import (plot_raster)
@@ -15,7 +15,7 @@ def polar_tuning_curve(orients, rates, ax=None, params={}):
     """
     import numpy as np
     import math
-    from exana.misc import pretty_plotting
+    import pretty_plotting
 
     assert len(orients) == len(rates)
 
