@@ -200,7 +200,10 @@ def select_best_position(x1, y1, t1, x2, y2, t2, speed_filter=5 * pq.m / pq.s):
 def interp_filt_position(x, y, tm, box_xlen=1 * pq.m, box_ylen=1 * pq.m,
                          pos_fs=100 * pq.Hz, f_cut=10 * pq.Hz):
     """
-    Calculeate head direction in angles or radians for time t
+    rapid head movements will contribute to velocity artifacts,
+    these can be removed by low-pass filtering
+    see http://www.ncbi.nlm.nih.gov/pmc/articles/PMC1876586/
+    code addapted from Espen Hagen
 
     Parameters
     ----------
