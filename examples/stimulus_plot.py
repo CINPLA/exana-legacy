@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import quantities as pq
 from .tools import *
-from ..misc.plot import simpleaxis
-from ..statistics.plot import (plot_spike_histogram)
-from ..general.plot import (plot_raster)
-from ..statistics.tools import (fano_factor_multiunit)
+from utils import simpleaxis
+from statistics_plot import (plot_spike_histogram)
+from general_plot import (plot_raster)
+from exana.statistics.tools import (fano_factor_multiunit)
 
 
 def polar_tuning_curve(orients, rates, ax=None, params={}):

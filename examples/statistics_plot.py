@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import quantities as pq
 import neo
 import warnings
-from ..misc.plot import simpleaxis
+from utils import simpleaxis
 
 
 def plot_spike_histogram(trials, color='b', ax=None, binsize=None, bins=None,
