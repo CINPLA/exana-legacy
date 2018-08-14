@@ -108,6 +108,7 @@ def plot_psth(spike_train=None, epoch=None, trials=None, xlim=[None, None],
               hist_alpha=1.):
     """
     Visualize clustering on amplitude at detection point
+    
     Parameters
     ----------
     spike_train : neo.SpikeTrain
@@ -135,6 +136,7 @@ def plot_psth(spike_train=None, epoch=None, trials=None, xlim=[None, None],
         Accepts 'counts', 'rate' or 'mean'.
     hist_binsize : pq.Quantity
     hist_nbins : int
+
     Returns
     -------
     out : fig

@@ -149,6 +149,7 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
                            dim=None):
     '''
     Makes trials based on an Epoch and given temporal bound
+
     Parameters
     ----------
     spike_train : neo.SpikeTrain, neo.Unit, numpy.array, quantities.Quantity
@@ -159,6 +160,7 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
         time after epochs default is duration of epoch
     dim : str
         if spike_train is numpy.array, the unit must be provided, e.g. "s"
+        
     Returns
     -------
     out : list of neo.SpikeTrains
