@@ -26,7 +26,7 @@ def concatenate_spiketrains(spike_trains):
     ...                              units='s')
     >>> spiketrain = concatenate_spiketrains([spiketrain1, spiketrain2])
     >>> spiketrain.times
-    <SpikeTrain(array([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.]) * s, [0.0 s, 20.0 s])>
+    array([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.]) * s
     '''
     if not isinstance(spike_trains, (list, tuple)):
         raise TypeError('Expected "list, tuple", got "' + str(type(spike_trains)) + '"')

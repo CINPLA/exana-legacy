@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import quantities as pq
-from ..misc.tools import is_quantities
-from .timefreq import TimeFreq
+from utils import is_quantities
+from exana.timefreq import TimeFreq
 
 
 def plot_psd(trials, color='b', ax=None, nperseg=1024, lw=2, label='LFP',

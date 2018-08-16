@@ -200,7 +200,10 @@ def select_best_position(x1, y1, t1, x2, y2, t2, speed_filter=5 * pq.m / pq.s):
 def interp_filt_position(x, y, tm, box_xlen=1 * pq.m, box_ylen=1 * pq.m,
                          pos_fs=100 * pq.Hz, f_cut=10 * pq.Hz):
     """
-    Calculeate head direction in angles or radians for time t
+    rapid head movements will contribute to velocity artifacts,
+    these can be removed by low-pass filtering
+    see http://www.ncbi.nlm.nih.gov/pmc/articles/PMC1876586/
+    code addapted from Espen Hagen
 
     Parameters
     ----------
@@ -396,68 +399,6 @@ def find_laps(peaks_start, peaks_stop, valid_start, valid_stop):
         # add start and end time of lap
         laps.append([[t_start, t_stop], [x_start, x_stop]])
     return laps
-
-
-def identify_laps_on_linear_track(x,
-                                  t,
-                                  kernel='auto',
-                                  val_margin=.3,
-                                  track_len='max'):
-    """  Individual laps on linear track are identified by,
-      a) smoothing trajectory
-      b) find peaks of trajectory
-      c) connect minimal and maximal peaks, if they are located in
-         the respective region at the end of the track.
-         The region extends from the end of the track to max_length*val_margin
-
-    Parameters
-    ----------
-    x : quantities.Quantity array in m
-        1d vector of x positions
-    t : quantities.Quantity array in s
-        1d vector of times at x positions
-    kernel : numpy.ndarray|str['auto']
-        Kernel for smoothing of trajectory
-        If 'auto', boxcar kernel will be used
-    val_margin : float
-        Fraction of environment that defines valid zone of return
-        points at beginning and end of track
-    track_len : float|str['max']
-        Lenght of linear track
-        If 'max', maximal pos value will be used
-
-    Returns
-    -------
-    laps_start2end, list of [x_start, x_stop],[t_start, t_stop]
-    laps_end2start, list of [x_start, x_stop],[t_start, t_stop]
-
-    """
-    t = t.rescale('s')
-    sampling_rate = np.median(np.diff(t))
-    x = x.rescale('m')
-
-    if kernel == 'auto':
-        filter_width = int(np.ceil(5*sampling_rate))
-        kernel = np.ones(filter_width)/filter_width
-    x_filt = sig.convolve(x, kernel, mode='same') * pq.m
-
-    max_peaks, min_peaks = peakdetect(x_filt, t)
-    max_peaks = np.array(max_peaks)
-    min_peaks = np.array(min_peaks)
-
-    if track_len == 'max':
-        x_max = np.max(x_filt)
-    else:
-        x_max = track_len
-
-    valid_start = [0. * pq.m,
-                   val_margin*x_max]
-    valid_stop = [x_max - val_margin * x_max, x_max]
-
-    laps_start2end = find_laps(min_peaks, max_peaks, valid_start, valid_stop)
-    laps_end2start = find_laps(max_peaks, min_peaks, valid_stop, valid_start)
-
-    return laps_start2end, laps_end2start
 
 
 def gaussian2D(amp, x, y, xc, yc, s):

@@ -3,12 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import quantities as pq
-from .fields import (gridness, occupancy_map,
+from exana.fields import (gridness, occupancy_map,
                      spatial_rate_map,
                      spatial_rate_map_1d)
-from .tools import (rescale_linear_track_2d_to_1d)
-from .head import *
-from ..misc.plot import simpleaxis
+from exana.tools import (rescale_linear_track_2d_to_1d)
+from exana.head import *
+from utils import simpleaxis
 import math
 from scipy.ndimage.measurements import center_of_mass
 import matplotlib.gridspec as gridspec
