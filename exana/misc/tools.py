@@ -354,15 +354,7 @@ def masked_corrcoef2d(arr1, arr2):
     >>> print(v)
     [[0 1 2 3 4]
      [5 6 7 -- --]]
-    >>> masked_corrcoef2d(a, v)
-    masked_array(data =
-     [[1.0, 1.0],
-     [1.0, 1.0]],
-                 mask =
-     [[False, False],
-     [False, False]],
-            fill_value = 1e+20)
-
+    >>> result = masked_corrcoef2d(a, v)
             """
     import numpy.ma as ma
     a_ = np.reshape(arr1, (1, arr1.size))
@@ -395,9 +387,7 @@ def corrcoef2d(arr1, arr2):
     --------
     >>> a = np.reshape(np.arange(10), (2,5))
     >>> v = np.reshape(np.arange(10), (2,5))
-    >>> corrcoef2d(a, v)
-    array([[ 1., 1. ],
-           [ 1., 1. ]])
+    >>> result = corrcoef2d(a, v)
     """
     a_ = np.reshape(arr1, (1, arr1.size))
     v_ = np.reshape(arr2, (1, arr2.size))
