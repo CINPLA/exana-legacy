@@ -471,11 +471,14 @@ def spatial_rate_map_1d(x, t, sptr,
         return rate.T
 
 
-def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
+def separate_fields(rate_map, laplace_thrsh = 0, 
         cutoff_method='none', box_xlen=1*pq.m,
         box_ylen=1*pq.m,index=False):
     """Separates fields using the laplacian to identify fields separated by
-    a negative second derivative.
+    a negative second derivative. 
+
+    To get centers of each field, scipy.ndimage.maximum_position or 
+    scipy.ndimage.center_of_mass can be used.
 
     Parameters
     ----------
@@ -485,9 +488,6 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
         value of laplacian to separate fields by relative to the minima. Should be
         on the interval 0 to 1, where 0 cuts off at 0 and 1 cuts off at
         min(laplace(rate_map)). Default 0.
-    center_method : string
-        method to find field centers. Valid options = ['center_of_mass',
-        'maxima','gaussian_fit']
     cutoff_method (optional) : string or function
         function to exclude small fields. If local field value of function
         is lower than global function value, the field is excluded. Valid
@@ -566,59 +566,8 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
         new[fields == size_sort[i]+1] = i+1
     fields = new
 
-    bc = get_bump_centers(rate_map,labels=fields,ret_index=index,indices=indx,method=center_method,
-                          units=box_xlen.units)
-
     # TODO exclude fields where maxima is on the edge of the field?
     return fields, n_fields, bc
-
-
-def get_bump_centers(rate_map, labels, indices=None, ret_index=False):
-    """Finds center of fields at labels using fit of gaussian bumps at the
-    fields.
-
-    Parameters
-    ----------
-    rate_map : np 2d array
-        rate in each bin
-
-    labels : np 2d array
-        separated areas labeled with integers, each containing a bump
-
-    indices : array like (optional)
-        input to specify which labels to calculate bump centers at
-
-    Returns
-    -------
-    bc : np 2d array
-        x and y position of each bump
-
-    Usage
-    -----
-    >>> bc = find_bump_centers(rate_map, labels=labels, index=indices)
-
-    Alternative method
-    ------------------
-
-    >>> from scipy import ndimage
-    >>> bc = ndimage.maximum_position(rate_map, labels=labels, index=indices)
-    >>> bc = ndimage.center_of_mass(rate_map, labels=labels, index=indices)
-    """
-
-    if indices is None:
-        indices = indices or np.unique(labels) 
-
-    from  exana.tracking.tools import fit_gauss_asym
-    bc = np.zeros((len(indices),2))
-    for ind in indices:
-        r = rate_map.copy()
-        r[labels != ind] = 0
-        popt = fit_gauss_asym(r, return_data=False)
-        # TODO Find out which axis is x and which is y
-        bc[ind-1] = (popt[2],popt[1])
-    return np.array(bc)*units
-
-
 
 
 def find_avg_dist(rate_map, thrsh = 0, plot=False):
@@ -650,12 +599,10 @@ def find_avg_dist(rate_map, thrsh = 0, plot=False):
     acorr = fftcorrelate2d(rate_map,rate_map, mode = 'full', normalize = True)
 
     #acorr[acorr<0] = 0 # TODO Fix this
-    f, nf, bump_centers = separate_fields(acorr,laplace_thrsh=thrsh,
-            center_method='maxima',cutoff_method='median')
+    f, nf = separate_fields(acorr,laplace_thrsh=thrsh, cutoff_method='median')
                                          # TODO Find a way to find valid value for
                                          # thrsh, or remove.
-
-    bump_centers = np.array(bump_centers)
+    bump_centers = np.array(maximum_position(acorr, f, np.arange(nf)+1))
 
     # find dists from center in (autocorrelation)relative units (from 0 to 1)
     distances = np.linalg.norm(bump_centers - (0.5,0.5), axis = 1)
@@ -791,9 +738,6 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
         current matplotlib ax. Default False
     thrsh : float, default 0
         see find_avg_dist()
-    center_method : string, valid options: ['maxima', 'center_of_mass']
-        default: 'center_of_mass'
-        see separate_fields()
     method : string, valid options: ['closest', 'best']
         see fit_hex()
 
@@ -830,18 +774,9 @@ def calculate_grid_geometry(rate_map, plot_fields=False, **kwargs):
            [0.5, 0.1]]) * m, 0.4472135954999579, 0.0, 26.565051177077983)
     """
 
-    from scipy.ndimage import mean, center_of_mass
-
-    # TODO: smooth data?
-    # smooth_rate_map = lambda x:x
-    # rate_map = smooth_rate_map(rate_map)
-
-    center_method = kwargs.pop('center_method',None)
-    if center_method:
-        fields, nfields, bump_centers = separate_fields(rate_map,
-                                        center_method=center_method)
-    else:
-        fields, nfields, bump_centers = separate_fields(rate_map)
+    from scipy.ndimage import center_of_mass
+    fields, nfields = separate_fields(rate_map)
+    bump_centers = center_of_mass(rate_map, fields, np.unique(fields))
 
     if bump_centers.size == 0:
         import warnings
