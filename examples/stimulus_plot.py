@@ -97,83 +97,109 @@ def orient_raster_plots(trials):
     return fig
 
 
-def plot_psth(sptr=None, epoch=None, t_start=None, t_stop=None, trials=None,
-              output='counts', binsize=None, bins=100, fig=None,
-              color='b', title='plot_psth', stim_color='b', edgecolor='k',
-              alpha=.2, label='stim on', legend_loc=1, legend_style='patch',
-              axs=None, hist_ylabel=True, rast_ylabel='trials',
-              ylim=None, offset=0 * pq.s):
+def plot_psth(spike_train=None, epoch=None, trials=None, xlim=[None, None],
+              fig=None, axs=None, legend_loc=1, color='b',
+              title='', stim_alpha=.2, stim_color=None,
+              stim_label='Stim on', stim_style='patch', stim_offset=0*pq.s,
+              rast_ylabel='Trials', rast_size=10,
+              hist_color=None, hist_edgecolor=None,
+              hist_ylim=None,  hist_ylabel=None,
+              hist_output='counts', hist_binsize=None, hist_nbins=100,
+              hist_alpha=1.):
     """
     Visualize clustering on amplitude at detection point
-
+    
     Parameters
     ----------
-    sptr : neo.SpikeTrain
+    spike_train : neo.SpikeTrain
+    epoch : neo.Epoch
     trials : list of cut neo.SpikeTrains with same number of recording channels
-    color : color of spikes
-    title : figure title
+    xlim : list
+        limit of x axis
     fig : matplotlib figure
     axs : matplotlib axes (must be 2)
     legend_loc : 'outside' or matplotlib standard loc
-    legend_style : 'patch' or 'line'
+    color : color of spikes
+    title : figure title
+    stim_alpha : float
+    stim_color : str
+    stim_label : str
+    stim_style : 'patch' or 'line'
+    stim_offset : pq.Quantity
+        The amount of offset for the stimulus relative to epoch.
+    rast_ylabel : str
+    hist_color : str
+    hist_edgecolor : str
+    hist_ylim : list
+    hist_ylabel : str
+    hist_output : str
+        Accepts 'counts', 'rate' or 'mean'.
+    hist_binsize : pq.Quantity
+    hist_nbins : int
 
     Returns
     -------
     out : fig
     """
     if fig is None and axs is None:
-        fig, (ax, ax2) = plt.subplots(2, 1, sharex=True)
+        fig, (hist_ax, rast_ax) = plt.subplots(2, 1, sharex=True)
     elif fig is not None and axs is None:
-        ax = fig.add_subplot(2, 1, 1)
-        ax2 = fig.add_subplot(2, 1, 2, sharex=ax)
+        hist_ax = fig.add_subplot(2, 1, 1)
+        rast_ax = fig.add_subplot(2, 1, 2, sharex=hist_ax)
     else:
         assert len(axs) == 2
-        ax, ax2 = axs
-    if trials is None:
-        assert sptr is not None
-        assert epoch is not None
-        t_start = t_start or 0 * pq.s
-        t_stop = t_stop or epoch.durations[0]
-        trials = make_spiketrain_trials(epoch=epoch, t_start=t_start, t_stop=t_stop,
-                                        spike_train=sptr)
-        dim = sptr.times.dimensionality
-        stim_duration = epoch.durations.rescale(dim).magnitude.max()
-    else:
-        dim = trials[0].times.dimensionality
-        if legend_style == 'patch':
-            if epoch is not None:
-                stim_duration = epoch.durations.rescale(dim).magnitude.max()
-            else:
-                import warnings
-                warnings.warn('Unable to acquire stimulus duration, setting ' +
-                              'legend_style to "line". Please provede "epoch"' +
-                              ' in order to use legend_style "patch".')
-                legend_style = 'line'
+        hist_ax, rast_ax = axs
 
-    plot_spike_histogram(trials, color=color, ax=ax, output=output,
-                         binsize=binsize, bins=bins, edgecolor=edgecolor,
-                         ylabel=hist_ylabel)
-    if ylim is not None:
-        ax.set_ylim(ylim)
-    plot_raster(trials, color=color, ax=ax2, ylabel=rast_ylabel)
-    if legend_style == 'patch':
+    if trials is None:
+        assert spike_train is not None and epoch is not None
+        t_start = xlim[0] or 0 * pq.s
+        t_stop = xlim[1] or epoch.durations[0]
+        trials = make_spiketrain_trials(epoch=epoch, t_start=t_start,
+                                        t_stop=t_stop, spike_train=spike_train)
+    else:
+        assert spike_train is None
+    dim = trials[0].times.dimensionality
+    if stim_style == 'patch':
+        if epoch is not None:
+            stim_duration = epoch.durations.rescale(dim).magnitude.max()
+        else:
+            warnings.warn('Unable to acquire stimulus duration, setting ' +
+                          'stim_style to "line". Please provede "epoch"' +
+                          ' in order to use stim_style "patch".')
+            stim_style = 'line'
+    # raster
+    plot_raster(trials, color=color, ax=rast_ax, ylabel=rast_ylabel,
+                marker_size=rast_size)
+    # histogram
+    hist_color = color if hist_color is None else hist_color
+    hist_ylabel = hist_output if hist_ylabel is None else hist_ylabel
+    plot_spike_histogram(trials, color=hist_color, ax=hist_ax,
+                         output=hist_output, binsize=hist_binsize,
+                         nbins=hist_nbins, edgecolor=hist_edgecolor,
+                         ylabel=hist_ylabel, alpha=hist_alpha)
+    if hist_ylim is not None: hist_ax.set_ylim(hist_ylim)
+    # stim representation
+    stim_color = color if stim_color is None else stim_color
+    if stim_style == 'patch':
         fill_stop = stim_duration
         import matplotlib.patches as mpatches
-        line = mpatches.Patch([], [], color=stim_color, label=label, alpha=alpha)
-    elif legend_style == 'line':
+        line = mpatches.Patch([], [], color=stim_color, label=stim_label,
+                              alpha=stim_alpha)
+    elif stim_style == 'line':
         fill_stop = 0
         import matplotlib.lines as mlines
-        line = mlines.Line2D([], [], color=stim_color, label=label)
-    offset = offset.rescale('s').magnitude
-    ax.axvspan(offset, fill_stop + offset, color=stim_color, alpha=alpha)
-    ax2.axvspan(offset, fill_stop + offset, color=stim_color, alpha=alpha)
+        line = mlines.Line2D([], [], color=stim_color, label=stim_label)
+    stim_offset = stim_offset.rescale(dim).magnitude
+    hist_ax.axvspan(stim_offset, fill_stop + stim_offset, color=stim_color,
+                    alpha=stim_alpha, zorder=0)
+    rast_ax.axvspan(stim_offset, fill_stop + stim_offset, color=stim_color,
+                    alpha=stim_alpha, zorder=0)
     if legend_loc == 'outside':
-        ax.legend(handles=[line], bbox_to_anchor=(0., 1.02, 1., .102), loc=4,
-                  ncol=2, borderaxespad=0.)
+        hist_ax.legend(handles=[line], bbox_to_anchor=(0., 1.02, 1., .102),
+                       loc=4, ncol=2, borderaxespad=0.)
     else:
-        ax.legend(handles=[line], loc=legend_loc, ncol=2, borderaxespad=0.)
-    if title is not None:
-        ax.set_title(title)
+        hist_ax.legend(handles=[line], loc=legend_loc, ncol=2, borderaxespad=0.)
+    if title is not None: hist_ax.set_title(title)
     return fig
 
 
