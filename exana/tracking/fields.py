@@ -573,38 +573,51 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
     return fields, n_fields, bc
 
 
-def get_bump_centers(rate_map, labels, ret_index=False, indices=None, method='maxima',
-        units=1*pq.m):
-    """Finds center of fields at labels."""
+def get_bump_centers(rate_map, labels, indices=None, ret_index=False):
+    """Finds center of fields at labels using fit of gaussian bumps at the
+    fields.
 
-    from scipy import ndimage
+    Parameters
+    ----------
+    rate_map : np 2d array
+        rate in each bin
 
-    if method not in ['maxima','center_of_mass','gaussian_fit']:
-        msg = "invalid center_method flag '%s'" % method
-        raise ValueError(msg)
+    labels : np 2d array
+        separated areas labeled with integers, each containing a bump
+
+    indices : array like (optional)
+        input to specify which labels to calculate bump centers at
+
+    Returns
+    -------
+    bc : np 2d array
+        x and y position of each bump
+
+    Usage
+    -----
+    >>> bc = find_bump_centers(rate_map, labels=labels, index=indices)
+
+    Alternative method
+    ------------------
+
+    >>> from scipy import ndimage
+    >>> bc = ndimage.maximum_position(rate_map, labels=labels, index=indices)
+    >>> bc = ndimage.center_of_mass(rate_map, labels=labels, index=indices)
+    """
+
     if indices is None:
-        indices = np.arange(1,np.max(labels)+1)
-    if method == 'maxima':
-        bc = ndimage.maximum_position(rate_map, labels=labels,
-                index=indices)
-    elif method == 'center_of_mass':
-        bc = ndimage.center_of_mass(rate_map, labels=labels, index=indices)
-    elif method == 'gaussian_fit':
-        from  exana.tracking.tools import fit_gauss_asym
-        bc = np.zeros((len(indices),2))
-        import matplotlib.pyplot as plt
-        for i in indices:
-            r = rate_map.copy()
-            r[labels != i] = 0
-            popt = fit_gauss_asym(r, return_data=False)
-            # TODO Find out which axis is x and which is y
-            bc[i-1] = (popt[2],popt[1])
-        if ret_index:
-            msg = 'ret_index not implemented for gaussian fit'
-            raise NotImplementedError(msg)
-    if not ret_index and not method=='gaussian_fit':
-        bc = (bc + np.array((0.5,0.5)))/rate_map.shape
+        indices = indices or np.unique(labels) 
+
+    from  exana.tracking.tools import fit_gauss_asym
+    bc = np.zeros((len(indices),2))
+    for ind in indices:
+        r = rate_map.copy()
+        r[labels != ind] = 0
+        popt = fit_gauss_asym(r, return_data=False)
+        # TODO Find out which axis is x and which is y
+        bc[ind-1] = (popt[2],popt[1])
     return np.array(bc)*units
+
 
 
 
