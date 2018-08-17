@@ -1,7 +1,6 @@
 import numpy as np
 import quantities as pq
 from ..misc.tools import is_quantities, normalize
-from ..misc.peakdetect import peakdetect
 from .head import head_direction
 import pdb
 import scipy.signal as sig
