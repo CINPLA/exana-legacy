@@ -2,10 +2,10 @@ import neo
 import numpy as np
 import matplotlib.pyplot as plt
 import quantities as pq
-from exana.tools import *
+from exana.stimulus.tools import *
 from utils import simpleaxis
 from statistics_plot import (plot_spike_histogram)
-from general_plot import (plot_raster)
+from raster_plot import (plot_raster)
 from exana.statistics.tools import (fano_factor_multiunit)
 
 
@@ -108,7 +108,7 @@ def plot_psth(spike_train=None, epoch=None, trials=None, xlim=[None, None],
               hist_alpha=1.):
     """
     Visualize clustering on amplitude at detection point
-    
+
     Parameters
     ----------
     spike_train : neo.SpikeTrain

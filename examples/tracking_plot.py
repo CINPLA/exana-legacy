@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import quantities as pq
-from exana.fields import (gridness, occupancy_map,
+from exana.tracking.fields import (gridness, occupancy_map,
                      spatial_rate_map,
                      spatial_rate_map_1d)
 from exana.tools import (rescale_linear_track_2d_to_1d)
