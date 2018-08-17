@@ -6,13 +6,12 @@ import quantities as pq
 from exana.tracking.fields import (gridness, occupancy_map,
                      spatial_rate_map,
                      spatial_rate_map_1d)
-from exana.tools import (rescale_linear_track_2d_to_1d)
-from exana.head import *
+from exana.tracking.head import *
 from utils import simpleaxis
 import math
 from scipy.ndimage.measurements import center_of_mass
 import matplotlib.gridspec as gridspec
-
+from exana.misc.tools import is_quantities
 
 def plot_path(x, y, t, box_xlen, box_ylen, sptr=None,
               color='grey', alpha=0.5, origin='upper',
