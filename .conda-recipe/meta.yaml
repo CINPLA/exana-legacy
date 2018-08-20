@@ -4,7 +4,8 @@ package:
 source:
     git_url: ..
 build:
-    script: pip install neo elephant && python setup.py install
+    noarch: python
+    script: python setup.py install
 requirements:
     build:
         - python
@@ -28,6 +29,12 @@ requirements:
 test:
   imports:
     - exana
+  commands:
+    - python -c "import exana"
+    - coverage run --source tests -m py.test -s
+    - coverage report
+    - codecov
+    - cd docs ; make doctest
 about:
     description: ''
     dev_url: https://github.com/CINPLA/exana
