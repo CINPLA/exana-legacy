@@ -234,6 +234,7 @@ def occupancy_map(x, y, t,
                   binsize=0.01*pq.m,
                   box_xlen=1*pq.m,
                   box_ylen=1*pq.m,
+                  mask_unvisited=True,
                   convolve=True,
                   return_bins=False,
                   smoothing=0.02):
@@ -298,19 +299,23 @@ def occupancy_map(x, y, t,
     ix = np.digitize(x, xbins, right=True)
     iy = np.digitize(y, ybins, right=True)
     time_pos = np.zeros((xbins.size, ybins.size))
-    for n in range(len(x)):
+    for n in range(len(x) - 1):
         time_pos[ix[n], iy[n]] += time_in_bin[n]
     # correct for shifting of map since digitize returns values at right edges
     time_pos = time_pos[1:, 1:]
     if convolve:
+        rate[np.isnan(rate)] = 0.  # for convolution
         from astropy.convolution import Gaussian2DKernel, convolve_fft
         csize = (box_xlen / binsize) * smoothing
         kernel = Gaussian2DKernel(csize)
-        time_pos = convolve_fft(time_pos, kernel)  # TODO edge correction
+        rate = convolve_fft(rate, kernel)  # TODO edge correction
+    if mask_unvisited:
+        was_in_bin = np.asarray(time_pos, dtype=bool)
+        rate[np.invert(was_in_bin)] = np.nan
     if return_bins:
-        return time_pos.T, xbins, ybins
+        return rate.T, xbins, ybins
     else:
-        return time_pos.T
+        return rate.T
 
 
 def nvisits_map(x, y, t,
