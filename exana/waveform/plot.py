@@ -93,7 +93,8 @@ def plot_largest_waveform(sptr, color='r', ax=None, title='waveforms', lw=2,
         ax.set_ylabel(r'amplitude $\pm$ std [%s]' % m.dimensionality)
 
 
-def plot_amp_clusters(sptrs, colors=None, fig=None, title=None, gs=None):
+def plot_amp_clusters(sptrs, colors=None, fig=None, title=None, gs=None,
+                      zorders=None):
     """
     Visualize clustering on amplitude at detection point
 
@@ -131,6 +132,8 @@ def plot_amp_clusters(sptrs, colors=None, fig=None, title=None, gs=None):
     if colors is None:
         from matplotlib.pyplot import cm
         colors = cm.rainbow(np.linspace(0, 1, len(sptrs)))
+    if zorders is None:
+        zorders = [0] * len(sptrs)
     for idx, sptr in enumerate(sptrs):
         cnt = 0
         wf = sptr.waveforms
@@ -138,11 +141,12 @@ def plot_amp_clusters(sptrs, colors=None, fig=None, title=None, gs=None):
             sptr.left_sweep = 0.2 * pq.ms
         mask = int(sptr.sampling_rate*sptr.left_sweep.rescale('s'))
         color = colors[idx]
+        zorder = zorders[idx]
         for x in range(nrc-1):
             for y in range(nrc-1):
                 if y <= x:
                     axs[cnt].plot(wf[:, y-1, mask], wf[:, x, mask], ls='None',
-                                  marker='.', color=color)
+                                  marker='.', color=color, zorder=zorder)
                     cnt += 1
     if title is not None:
         fig.suptitle(title)
