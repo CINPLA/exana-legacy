@@ -1,7 +1,5 @@
-import quantities as pq
 import numpy as np
 import neo
-from exana.misc.tools import is_quantities
 
 
 def baysian_latency(count_data):
@@ -62,8 +60,8 @@ def generate_salt_trials(spike_train, epoch):
     return baseline_trials, test_trials
 
 
-def salt(baseline_trials, test_trials, winsize=0.01*pq.s,
-         latency_step=0.01*pq.s):
+def salt(baseline_trials, test_trials, winsize, latency_step,
+         baseline_t_start, baseline_t_stop, test_t_start, test_t_stop):
     '''SALT   Stimulus-associated spike latency test.
     Calculates a modified version of Jensen-Shannon divergence (see [1]_)
     for spike latency histograms. Please cite [2]_ when using this program.
@@ -79,12 +77,10 @@ def salt(baseline_trials, test_trials, winsize=0.01*pq.s,
        stimulus. The test period has to excede the window size (winsize)
        multiple times, as the length of the test period divided by the
        latency_step size determines the number of latencies to be tested.
-    winsize : quantities.Quantity
-        Window size for baseline and test windows in seconds
-        (optional default, 0.01 s).
-    latency_step : quantities.Quantity
-        Step size for test latencies in seconds
-        (optional default, 0.01 s).
+    winsize : float
+        Window size for baseline and test windows.
+    latency_step : float
+        Step size for test latencies.
 
 
     Returns
@@ -117,13 +113,7 @@ def salt(baseline_trials, test_trials, winsize=0.01*pq.s,
     .. [2] Kvitsiani D*, Ranade S*, Hangya B, Taniguchi H, Huang JZ, Kepecs A
        (2013) Distinct behavioural and network correlates of two interneuron
        types in prefrontal cortex. Nature 498:363?6.'''
-    t_start = baseline_trials[0].t_start.rescale('s')
-    t_stop = baseline_trials[0].t_stop.rescale('s')
-    winsize = winsize.rescale('s')
-    baseline_trials = [trial.rescale('s') for trial in baseline_trials]
-    test_trials = [trial.rescale('s') for trial in test_trials]
-
-    windows = np.arange(t_start, t_stop + winsize, winsize)
+    windows = np.arange(baseline_t_start, baseline_t_stop + winsize, winsize)
     binsize = winsize / 20
     bins = np.arange(- binsize, winsize + binsize, binsize)
     # Latency histogram - baseline
@@ -144,8 +134,7 @@ def salt(baseline_trials, test_trials, winsize=0.01*pq.s,
         hlsi[:, i], _ = np.histogram(min_spike_times, bins)   # latency histogram
         nhlsi[:, i] = hlsi[:, i] / sum(hlsi[:, i])   # normalized latency histogram
 
-    test_t_stop = test_trials[0].t_stop.rescale('s')
-    latencies = np.arange(0 * pq.s, test_t_stop + latency_step, latency_step)
+    latencies = np.arange(test_t_start, test_t_stop + latency_step, latency_step)
     p_values = []
     I_values = []
     nttrials = len(test_trials)   # number of trials

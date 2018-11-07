@@ -1,8 +1,6 @@
 import numpy as np
-import quantities as pq
-from ..misc.tools import is_quantities, normalize
+from ..misc.tools import normalize
 from .head import head_direction
-import pdb
 import scipy.signal as sig
 
 
@@ -46,17 +44,9 @@ def rescale_linear_track_2d_to_1d(x, y, end_0=[], end_1=[]):
     -------
     out : 1d vector
     """
-    from exana.misc.tools import is_quantities
     if not all([len(var) == len(var2) for var in
                 [x, y] for var2 in [x, y]]):
         raise ValueError('x, y, t must have same number of elements')
-    is_quantities([x, y], 'vector')
-    x = x.rescale('m').magnitude
-    y = y.rescale('m').magnitude
-    if len(end_0) != 2 or len(end_1) != 2:
-        raise ValueError('end_0 and end_1 must be 2d vectors')
-    end_0 = end_0.rescale('m').magnitude
-    end_1 = end_1.rescale('m').magnitude
     # shift coordinate system to have end_0 as origin
     x -= end_0[0]
     y -= end_0[1]
@@ -76,7 +66,7 @@ def rescale_linear_track_2d_to_1d(x, y, end_0=[], end_1=[]):
     # shift x_rot so that np.min(x_rot) == 0
     x_rot -= np.min(x_rot)
     # only consider x_rot in output
-    return x_rot*pq.m
+    return x_rot
 
 
 def find_laps(peaks_start, peaks_stop, valid_start, valid_stop):
@@ -104,11 +94,13 @@ def gaussian2D(amp, x, y, xc, yc, s):
     return amp * np.exp(- 0.5 * (((x - xc) / s)**2 + ((y - yc) / s)**2))
 
 
-def make_test_grid_rate_map(sigma=0.05*np.ones(7), spacing=0.3,
-                            amplitude=np.ones(7), dpos=0,
-                            box_xlen=1*pq.m, box_ylen=1*pq.m):
-    box_xlen = box_xlen.rescale('m').magnitude
-    box_ylen = box_ylen.rescale('m').magnitude
+def make_test_grid_rate_map(sigma=0.05, spacing=0.3,
+                            amplitude=1., dpos=0,
+                            box_xlen=1., box_ylen=1.):
+    if isinstance(sigma, float):
+        sigma = sigma * np.ones(7)
+    if isinstance(amplitude, float):
+        amplitude = amplitude * np.ones(7)
     x = np.linspace(0, box_xlen, 50)
     y = np.linspace(0, box_ylen, 50)
     x,y = np.meshgrid(x,y)
@@ -128,19 +120,14 @@ def make_test_grid_rate_map(sigma=0.05*np.ones(7), spacing=0.3,
     return rate_map, np.array(pos)
 
 
-def make_test_grid_spike_path(t_stop=10*pq.min, dt=1/(30*pq.Hz), box_xlen=1*pq.m,
-                              box_ylen=1*pq.m):
+def make_test_grid_spike_path(t_stop=600, dt=1/30, box_xlen=1, box_ylen=1):
     from elephant.spike_train_generation import homogeneous_poisson_process as hpp
     rate_map, grid_pos = make_test_grid_rate_map(box_xlen=box_xlen,
                                                  box_ylen=box_ylen)
-    box_xlen = box_xlen.rescale('m').magnitude
-    box_ylen = box_ylen.rescale('m').magnitude
     rate_map = rate_map > 0.1
     ny, nx = rate_map.shape
     xref = np.linspace(0, box_xlen, nx)
     yref = np.linspace(0, box_ylen, ny)
-    t_stop = t_stop.rescale('s').magnitude
-    dt = dt.rescale('s').magnitude
     time = np.arange(0, t_stop, dt)
 
     def speed_good(x1, y1, x2, y2, threshold=1.5):
@@ -157,8 +144,8 @@ def make_test_grid_spike_path(t_stop=10*pq.min, dt=1/(30*pq.Hz), box_xlen=1*pq.m
         y.append(y2)
         if in_rate_map(rate_map, x2, y2, xref, yref):
             curr_t = time[len(x) - 1]
-            st = hpp(rate=30.0 * pq.Hz, t_start=curr_t * pq.s,
-                     t_stop=(curr_t + dt) * pq.s)
+            st = hpp(rate=30.0, t_start=curr_t,
+                     t_stop=(curr_t + dt))
             spikes.extend(st.times.magnitude.tolist())
 
 

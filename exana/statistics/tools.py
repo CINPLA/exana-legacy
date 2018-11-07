@@ -1,17 +1,16 @@
 import numpy as np
-import quantities as pq
 import neo
 
 
-def theta_mod_idx(sptr, **kwargs):
+def theta_mod_idx(sptr, binsize, time_limit):
     '''Theta modulation index as defined in [3]_
 
     Parameters
     ----------
-    sptr : neo.SpikeTrain
-    binsize : Quantity
+    sptr : array
+    binsize : float
         Temporal binsize of autocorrelogram
-    time_limit : Quantity
+    time_limit : flaot
         Limit of autocorrelogram
 
     References
@@ -20,17 +19,9 @@ def theta_mod_idx(sptr, **kwargs):
        Theta-modulated place-by-direction cells in the hippocampal formation in the rat.
        The Journal of Neuroscience, 24(38), 8265-8277.
     '''
-    par = {'corr_bin_width': 0.01*pq.s,
-           'corr_limit': 1.*pq.s}
-    if kwargs:
-        par.update(kwargs)
-    dim = sptr.times.dimensionality
-    binsize = par.get('corr_bin_width') or par.get('binsize')
-    binsize = binsize.rescale(dim).magnitude
-    time_limit = par.get('corr_limit') or par.get('time_limit')
-    time_limit = time_limit.rescale(dim).magnitude
-    count, bins = correlogram(t1=sptr.times.magnitude, t2=None,
-                              binsize=binsize, limit=time_limit,  auto=True)
+
+    count, bins = correlogram(
+        t1=sptr, t2=None, binsize=binsize, limit=time_limit,  auto=True)
     th = count[(bins[:-1] >= .05) & (bins[:-1] <= .07)].mean()
     pk = count[(bins[:-1] >= .1) & (bins[:-1] <= .14)].mean()
     return (pk - th)/(pk + th)
@@ -43,7 +34,7 @@ def fano_factor(trials, bins=1, return_mean_var=False, return_bins=False):
     Parameters
     ----------
     trials : list
-        a list with np.arrays or neo.Spiketrains of spike times
+        a list with np.arrays of spike times
     bins : np.ndarray or int
         bins of where to calculate fano factor. Default is 1
     return_mean_var : bool
@@ -121,8 +112,6 @@ def fano_factor(trials, bins=1, return_mean_var=False, return_bins=False):
     """
     # TODO matching
     assert len(trials) > 0, 'trials cannot be empty'
-    if isinstance(trials[0], neo.SpikeTrain):
-        trials = [trial.times for trial in trials]
     if isinstance(bins, int):
         nbins = bins
     else:
@@ -552,34 +541,6 @@ def hollow_kernel(kernlen, width, hollow_fraction=0.6, kerntype='gaussian'):
     return kernel / sum(kernel)
 
 
-def ccg(t1, t2=None, binsize=1*pq.ms, limit=100*pq.ms, auto=False, density=None,
-        **kwargs):
-    '''
-    Wrapper for cross_correlation_histogram from elephant.
-    Note
-    ----
-    returns bins at right edges
-    '''
-    import elephant.spike_train_correlation as corr
-    import elephant.conversion as conv
-    if auto: t2 = t1
-    cch, bin_ids = corr.cross_correlation_histogram(
-        conv.BinnedSpikeTrain(t1, binsize),
-        conv.BinnedSpikeTrain(t2, binsize),
-        window=[-limit, limit],
-        **kwargs)
-    bins = cch.times
-    cch = cch.magnitude.flatten()
-    if auto:
-        # Compensate for the peak at time zero that results in autocorrelations
-        # by subtracting the total number of spikes from that bin. Note
-        # possible numerical issue here because 0.0 may fall at a bin edge.
-        c_temp, bins_temp = np.histogram([0.], bins=bins)
-        bin_containing_zero = np.nonzero(c_temp)[0][0]
-        cch[bin_containing_zero] = 0
-    return cch, bins
-
-
 def ccg_significance(t1, t2, binsize, limit, hollow_fraction, width,
                      kerntype='gaussian'):
     """
@@ -712,19 +673,13 @@ def correlogram(t1, t2=None, binsize=.001, limit=.02, auto=False,
     # True
     """
     if auto: t2 = t1
-    lot = [t1, t2, limit, binsize]
-    if any(isinstance(a, pq.Quantity) for a in lot):
-        if not all(isinstance(a, pq.Quantity) for a in lot):
-            raise ValueError('If any is quantity all must be ' +
-                             '{}'.format([type(d) for d in lot]))
-        dim = t1.dimensionality
-        t1, t2, limit, binsize = [a.rescale(dim).magnitude for a in lot]
     # For auto-CCGs, make sure we use the same exact values
     # Otherwise numerical issues may arise when we compensate for zeros later
     if not int(limit * 1e10) % int(binsize * 1e10) == 0:
-        raise ValueError('Time limit {} must be a '.format(limit) +
-                         'multiple of binsize {}'.format(binsize) +
-                         ' remainder = {}'.format(limit % binsize))
+        raise ValueError(
+            'Time limit {} must be a '.format(limit) +
+            'multiple of binsize {}'.format(binsize) +
+            ' remainder = {}'.format(limit % binsize))
     # For efficiency, `t1` should be no longer than `t2`
     swap_args = False
     if len(t1) > len(t2):

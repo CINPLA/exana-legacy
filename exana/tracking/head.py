@@ -1,19 +1,17 @@
 import numpy as np
-import quantities as pq
-from ..misc.tools import is_quantities
 
 
-def head_direction_rate(sptr, head_angles, t, binsize=4, n_avg_bin=4):
+def head_direction_rate(spike_train, head_angles, t, binsize=4, n_avg_bin=4):
     """
     Calculeate firing rate at head direction in binned head angles for time t.
     Moving average filter is applied on firing rate
 
     Parameters
     ----------
-    sptr : neo.SpikeTrain
-    head_angles : quantities.Quantity array in degrees
+    spike_train : array
+    head_angles : array in degrees
         all recorded head directions
-    t : quantities.Quantity array in s
+    t : array
         1d vector of times at x, y positions
     binsize : float
         angular binsize
@@ -25,16 +23,15 @@ def head_direction_rate(sptr, head_angles, t, binsize=4, n_avg_bin=4):
     out : np.ndarray, np.ndarray
         binned angles, avg rate in corresponding bins
     """
-    assert head_angles.units == pq.degrees, "Angles must be in degrees"
     assert len(head_angles) == len(t)
     from ..misc.tools import moving_average
     # make bins around angle measurements
-    spikes_in_bin, _ = np.histogram(sptr, t)
+    spikes_in_bin, _ = np.histogram(spike_train, t)
     # take out the first and every other bin
-    time_in_bin = np.diff(t.magnitude)
+    time_in_bin = np.diff(t)
     med_time = np.median(time_in_bin)
     # bin head_angles
-    ang_bins = np.arange(0, 360 + binsize, binsize) * pq.degrees
+    ang_bins = np.arange(0, 360 + binsize, binsize)
     ia = np.digitize(head_angles, ang_bins, right=True)
     spikes_in_ang = np.zeros(ang_bins.size)
     time_in_ang = np.zeros(ang_bins.size)
@@ -54,9 +51,9 @@ def head_direction_stats(head_angle_bins, rate):
 
     Parameters
     ----------
-    head_angle_bins : quantities.Quantity array in degrees
+    head_angle_bins : array in radians
         binned head directions
-    rate : np.ndarray
+    rate : array
         firing rate magnitude coresponding to angles
 
     Returns
@@ -66,20 +63,16 @@ def head_direction_stats(head_angle_bins, rate):
     """
     import math
     import pycircstat as pc
-    if head_angle_bins.units == pq.degrees:
-        head_angle_bins = [math.radians(deg) for deg in head_angle_bins
-                           ] * pq.radians
-    nanIndices = np.where(np.isnan(rate))[0]
-    nanIndices = np.unique(nanIndices)
-    rate = np.delete(rate, nanIndices)
+    if any(np.isnan(rate)):
+        raise ValueError('Nan not supported')
     head_angle_bins = np.delete(head_angle_bins, nanIndices)
     mean_ang = pc.mean(head_angle_bins, w=rate)
     mean_vec_len = pc.resultant_vector_length(head_angle_bins, w=rate)
     # ci_lim = pc.mean_ci_limits(head_angle_bins, w=rate)
-    return math.degrees(mean_ang), mean_vec_len
+    return mean_ang, mean_vec_len
 
 
-def head_direction(x1, y1, x2, y2, t, return_rad=True, filt=2.):
+def head_direction(x1, y1, x2, y2, t, filt=2.):
     """
     Calculeate head direction in angles or radians for time t
 
@@ -95,8 +88,6 @@ def head_direction(x1, y1, x2, y2, t, return_rad=True, filt=2.):
         1d vector of x positions from LED 2
     t : quantities.Quantity array in s
         1d vector of times from LED 1 or 2 at x, y positions
-    return_rad : bool
-        return radians
     filt : float
         threshold filter all LED distances less than filt*std(dist)
 
@@ -137,11 +128,7 @@ def head_direction(x1, y1, x2, y2, t, return_rad=True, filt=2.):
     dx_g = x2 - x1
     dy_g = y2 - y1
 
-    angles_rad = np.arctan2(dy_g, dx_g) * pq.rad
+    angles_rad = np.arctan2(dy_g, dx_g)
     tmpIndices = np.where(angles_rad < 0)
-    angles_rad[tmpIndices] += 2*np.pi
-    if return_rad:
-        return angles_rad, t[indeces]
-    else:
-        angles_deg = [math.degrees(rad) for rad in angles_rad] * pq.degrees
-        return angles_deg, t[indeces]
+    angles_rad[tmpIndices] += 2 * np.pi
+    return angles_rad, t[indeces]

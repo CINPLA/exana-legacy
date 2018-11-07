@@ -1,5 +1,4 @@
 import numpy as np
-import quantities as pq
 import matplotlib.pyplot as plt
 from scipy.cluster.vq import kmeans, vq
 
@@ -92,7 +91,7 @@ def calculate_spike_widths(spikes_list, stime):
         half_width = []
         peak_to_peak = []
         index_max_amplitude = np.argmin(wf, axis=1)
-        value_half_amplitude = (wf.min(axis=1)*0.5)[:, np.newaxis]
+        value_half_amplitude = (wf.min(axis=1) * 0.5)[:, np.newaxis]
         new_wf = np.abs(wf - value_half_amplitude)
         for s in range(len(wf)):
             index_min = index_max_amplitude[s]
@@ -106,7 +105,7 @@ def calculate_spike_widths(spikes_list, stime):
                 peak_to_peak.append(stime[index_max] - stime[index_min])
         half_width_list.append(np.array(half_width))
         peak_to_peak_list.append(np.array(peak_to_peak))
-    return half_width_list * pq.ms, peak_to_peak_list * pq.ms
+    return half_width_list, peak_to_peak_list
 
 
 def calculate_average_firing_rate(sptrs):

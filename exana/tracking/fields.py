@@ -1,9 +1,8 @@
 import numpy as np
-import quantities as pq
 
 
-def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
-                     box_ylen=1*pq.m, mask_unvisited=True, convolve=True,
+def spatial_rate_map(x, y, t, sptr, binsize=0.01, box_xlen=1,
+                     box_ylen=1, mask_unvisited=True, convolve=True,
                      return_bins=False, smoothing=0.02):
     """Divide a 2D space in bins of size binsize**2, count the number of spikes
     in each bin and divide by the time spent in respective bins. The map can
@@ -13,11 +12,11 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     Parameters
     ----------
     sptr : neo.SpikeTrain
-    x : quantities.Quantity array in m
+    x : float
         1d vector of x positions
-    y : quantities.Quantity array in m
+    y : float
         1d vector of y positions
-    t : quantities.Quantity array in s
+    t : float
         1d vector of times at x, y positions
     binsize : float
         spatial binsize
@@ -34,7 +33,6 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
     if return_bins = True
     out : rate map, xbins, ybins
     """
-    from exana.misc.tools import is_quantities
     if not all([len(var) == len(var2) for var in [x,y,t] for var2 in [x,y,t]]):
         raise ValueError('x, y, t must have same number of elements')
     if box_xlen < x.max() or box_ylen < y.max():
@@ -47,19 +45,11 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
         raise ValueError('the remainder should be zero i.e. the ' +
                          'box length should be an exact multiple ' +
                          'of the binsize')
-    is_quantities([x, y, t], 'vector')
-    is_quantities(binsize, 'scalar')
-    t = t.rescale('s')
-    box_xlen = box_xlen.rescale('m').magnitude
-    box_ylen = box_ylen.rescale('m').magnitude
-    binsize = binsize.rescale('m').magnitude
-    x = x.rescale('m').magnitude
-    y = y.rescale('m').magnitude
 
     # interpolate one extra timepoint
-    t_ = np.append(t, t[-1] + np.median(np.diff(t))) * pq.s
+    t_ = np.append(t, t[-1] + np.median(np.diff(t)))
     spikes_in_bin, _ = np.histogram(sptr, t_)
-    time_in_bin = np.diff(t_.magnitude)
+    time_in_bin = np.diff(t_)
     xbins = np.arange(0, box_xlen + binsize, binsize)
     ybins = np.arange(0, box_ylen + binsize, binsize)
     ix = np.digitize(x, xbins, right=True)
@@ -90,7 +80,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01*pq.m, box_xlen=1*pq.m,
 
 
 def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
-             step_size=0.1*pq.m, method='iter', return_masked_acorr=False):
+             step_size=0.1, method='iter', return_masked_acorr=False):
     '''Calculates gridness of a rate map. Calculates the normalized
     autocorrelation (A) of a rate map B where A is given as
     A = 1/n\Sum_{x,y}(B - \bar{B})^{2}/\sigma_{B}^{2}. Further, the Pearsson's
@@ -111,9 +101,9 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
     Parameters
     ----------
     rate_map : numpy.ndarray
-    box_xlen : quantities scalar in m
+    box_xlen : float
         side length of quadratic box
-    step_size : quantities scalar in m
+    step_size : float
         step size in masking, only applies to the method "iter"
     return_acorr : bool
         return autocorrelation map or not
@@ -130,10 +120,10 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
     >>> from exana.tracking.tools import make_test_grid_rate_map
     >>> import matplotlib.pyplot as plt
     >>> rate_map, pos = make_test_grid_rate_map()
-    >>> iter_score = gridness(rate_map, box_xlen=1*pq.m, box_ylen=1*pq.m, method='iter')
+    >>> iter_score = gridness(rate_map, box_xlen=1, box_ylen=1, method='iter')
     >>> print('%.2f' % iter_score)
     1.39
-    >>> puncture_score = gridness(rate_map, box_xlen=1*pq.m, box_ylen=1*pq.m, method='puncture')
+    >>> puncture_score = gridness(rate_map, box_xlen=1, box_ylen=1, method='puncture')
     >>> print('%.2f' % puncture_score)
     0.96
 
@@ -141,18 +131,17 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
 
         import matplotlib.pyplot as plt
         import numpy as np
-        import quantities as pq
         from exana.tracking.tools import make_test_grid_rate_map
         from exana.tracking import gridness
         import matplotlib.pyplot as plt
         rate_map, _ = make_test_grid_rate_map()
         fig, axs = plt.subplots(2, 2)
-        g1, acorr, m_acorr1 = gridness(rate_map, box_xlen=1*pq.m,
-                                         box_ylen=1*pq.m, return_acorr=True,
+        g1, acorr, m_acorr1 = gridness(rate_map, box_xlen=1,
+                                         box_ylen=1, return_acorr=True,
                                          return_masked_acorr=True,
                                          method='iter')
-        g2, m_acorr2 = gridness(rate_map, box_xlen=1*pq.m,
-                                         box_ylen=1*pq.m,
+        g2, m_acorr2 = gridness(rate_map, box_xlen=1,
+                                         box_ylen=1,
                                          return_masked_acorr=True,
                                          method='puncture')
         mats = [rate_map, m_acorr1, acorr, m_acorr2]
@@ -166,13 +155,10 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
         plt.show()
     '''
     import numpy.ma as ma
-    from exana.misc.tools import (is_quantities, fftcorrelate2d)
+    from exana.misc.tools import fftcorrelate2d
     from exana.tracking.tools import gaussian2D
     from scipy.optimize import curve_fit
-    is_quantities([box_xlen, box_ylen, step_size], 'scalar')
-    box_xlen = box_xlen.rescale('m').magnitude
-    box_ylen = box_ylen.rescale('m').magnitude
-    step_size = step_size.rescale('m').magnitude
+
     tmp_map = rate_map.copy()
     tmp_map[~np.isfinite(tmp_map)] = 0
     acorr = fftcorrelate2d(tmp_map, tmp_map, mode='full', normalize=True)
@@ -198,8 +184,7 @@ def gridness(rate_map, box_xlen, box_ylen, return_acorr=False,
         # round picture edges
         _gaussian = lambda pos, a, s: gaussian2D(a, pos[0], pos[1], 0, 0, s).ravel()
         p0 = (max(acorr.ravel()), min(box_xlen, box_ylen) / 100)
-        popt, pcov = curve_fit(_gaussian, (B_x, B_y), acorr.ravel(),
-                               p0=p0)
+        popt, pcov = curve_fit(_gaussian, (B_x, B_y), acorr.ravel(), p0=p0)
         m_acorr = ma.masked_array(
             acorr, mask=np.sqrt(B_x**2 + B_y**2) > min(box_xlen, box_ylen) / 2)
         m_acorr = ma.masked_array(
@@ -231,9 +216,9 @@ def rotate_corr(acorr):
 
 
 def occupancy_map(x, y, t,
-                  binsize=0.01*pq.m,
-                  box_xlen=1*pq.m,
-                  box_ylen=1*pq.m,
+                  binsize=0.01,
+                  box_xlen=1,
+                  box_ylen=1,
                   mask_unvisited=True,
                   convolve=True,
                   return_bins=False,
@@ -244,15 +229,15 @@ def occupancy_map(x, y, t,
 
     Parameters
     ----------
-    x : quantities.Quantity array in m
+    x : array
         1d vector of x positions
-    y : quantities.Quantity array in m
+    y : array
         1d vector of y positions
-    t : quantities.Quantity array in s
+    t : array
         1d vector of times at x, y positions
     binsize : float
         spatial binsize
-    box_xlen : quantities scalar in m
+    box_xlen : float
         side length of quadratic box
     mask_unvisited: bool
         mask bins which has not been visited by nans
@@ -267,7 +252,6 @@ def occupancy_map(x, y, t,
     out : occupancy_map, xbins, ybins
     '''
 
-    from exana.misc.tools import is_quantities
     if not all([len(var) == len(var2) for var in [
             x, y, t] for var2 in [x, y, t]]):
         raise ValueError('x, y, t must have same number of elements')
@@ -282,18 +266,10 @@ def occupancy_map(x, y, t,
         raise ValueError('the remainder should be zero i.e. the ' +
                          'box length should be an exact multiple ' +
                          'of the binsize')
-    is_quantities([x, y, t], 'vector')
-    is_quantities(binsize, 'scalar')
-    t = t.rescale('s')
-    box_xlen = box_xlen.rescale('m').magnitude
-    box_ylen = box_ylen.rescale('m').magnitude
-    binsize = binsize.rescale('m').magnitude
-    x = x.rescale('m').magnitude
-    y = y.rescale('m').magnitude
 
     # interpolate one extra timepoint
-    t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))]) * pq.s
-    time_in_bin = np.diff(t_.magnitude)
+    t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))])
+    time_in_bin = np.diff(t_)
     xbins = np.arange(0, box_xlen + binsize, binsize)
     ybins = np.arange(0, box_ylen + binsize, binsize)
     ix = np.digitize(x, xbins, right=True)
@@ -319,9 +295,9 @@ def occupancy_map(x, y, t,
 
 
 def nvisits_map(x, y, t,
-                binsize=0.01*pq.m,
-                box_xlen=1*pq.m,
-                box_ylen=1*pq.m,
+                binsize=0.01,
+                box_xlen=1,
+                box_ylen=1,
                 return_bins=False):
     '''Divide a 2D space in bins of size binsize**2, count the
     number of visits in each bin. The map can  be convolved with
@@ -330,15 +306,15 @@ def nvisits_map(x, y, t,
 
     Parameters
     ----------
-    x : quantities.Quantity array in m
+    x : array
         1d vector of x positions
-    y : quantities.Quantity array in m
+    y : array
         1d vector of y positions
-    t : quantities.Quantity array in s
+    t : array
         1d vector of times at x, y positions
     binsize : float
         spatial binsize
-    box_xlen : quantities scalar in m
+    box_xlen : float
         side length of quadratic box
 
 
@@ -349,7 +325,6 @@ def nvisits_map(x, y, t,
     out : nvisits_map, xbins, ybins
     '''
 
-    from exana.misc.tools import is_quantities
     if not all([len(var) == len(var2) for var in [
             x, y, t] for var2 in [x, y, t]]):
         raise ValueError('x, y, t must have same number of elements')
@@ -364,14 +339,6 @@ def nvisits_map(x, y, t,
         raise ValueError('the remainder should be zero i.e. the ' +
                          'box length should be an exact multiple ' +
                          'of the binsize')
-    is_quantities([x, y, t], 'vector')
-    is_quantities(binsize, 'scalar')
-    t = t.rescale('s')
-    box_xlen = box_xlen.rescale('m').magnitude
-    box_ylen = box_ylen.rescale('m').magnitude
-    binsize = binsize.rescale('m').magnitude
-    x = x.rescale('m').magnitude
-    y = y.rescale('m').magnitude
 
     xbins = np.arange(0, box_xlen + binsize, binsize)
     ybins = np.arange(0, box_ylen + binsize, binsize)
@@ -393,8 +360,8 @@ def nvisits_map(x, y, t,
 
 
 def spatial_rate_map_1d(x, t, sptr,
-                        binsize=0.01*pq.m,
-                        track_len=1*pq.m,
+                        binsize=0.01,
+                        track_len=1,
                         mask_unvisited=True,
                         convolve=True,
                         return_bins=False,
@@ -406,14 +373,14 @@ def spatial_rate_map_1d(x, t, sptr,
 
     Parameters
     ----------
-    sptr : neo.SpikeTrain
-    x : quantities.Quantity array in m
+    sptr : array
+    x : array
         1d vector of x positions
-    t : quantities.Quantity array in s
+    t : array
         1d vector of times at x, y positions
     binsize : float
         spatial binsize
-    box_xlen : quantities scalar in m
+    box_xlen : float
         side length of quadratic box
     mask_unvisited: bool
         mask bins which has not been visited by nans
@@ -426,7 +393,6 @@ def spatial_rate_map_1d(x, t, sptr,
     if return_bins = True
     out : rate map, xbins
     """
-    from exana.misc.tools import is_quantities
     if not all([len(var) == len(var2) for var in [x, t] for var2 in [x, t]]):
         raise ValueError('x, t must have same number of elements')
     if track_len < x.max():
@@ -439,16 +405,10 @@ def spatial_rate_map_1d(x, t, sptr,
         raise ValueError('the remainder should be zero i.e. the ' +
                          'box length should be an exact multiple ' +
                          'of the binsize')
-    is_quantities([x, t], 'vector')
-    is_quantities(binsize, 'scalar')
-    t = t.rescale('s')
-    track_len = track_len.rescale('m').magnitude
-    binsize = binsize.rescale('m').magnitude
-    x = x.rescale('m').magnitude
     # interpolate one extra timepoint
-    t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))]) * pq.s
+    t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))])
     spikes_in_bin, _ = np.histogram(sptr, t_)
-    time_in_bin = np.diff(t_.magnitude)
+    time_in_bin = np.diff(t_)
     xbins = np.arange(0, track_len + binsize, binsize)
     ix = np.digitize(x, xbins, right=True)
     spike_pos = np.zeros(xbins.size)
@@ -476,9 +436,8 @@ def spatial_rate_map_1d(x, t, sptr,
         return rate.T
 
 
-def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
-        cutoff_method='none', box_xlen=1*pq.m,
-        box_ylen=1*pq.m,index=False):
+def separate_fields(rate_map, laplace_thrsh=0, center_method='maxima',
+        cutoff_method='none', box_xlen=1, box_ylen=1, index=False):
     """Separates fields using the laplacian to identify fields separated by
     a negative second derivative.
 
@@ -579,7 +538,7 @@ def separate_fields(rate_map, laplace_thrsh = 0, center_method = 'maxima',
 
 
 def get_bump_centers(rate_map, labels, ret_index=False, indices=None, method='maxima',
-        units=1*pq.m):
+        units=1):
     """Finds center of fields at labels."""
 
     from scipy import ndimage

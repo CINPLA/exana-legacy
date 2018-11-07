@@ -1,7 +1,6 @@
 import neo
 import numpy as np
 import matplotlib.pyplot as plt
-import quantities as pq
 import os
 
 
@@ -110,11 +109,10 @@ def moving_average(vector, N):
     >>> result = moving_average(a, 5)
     >>> a = np.arange(10)
     >>> result = moving_average(a, 5)
+    array([1., 1., 1., 1., 1., 1., 1., 1., 1., 1.])
+    array([0.8, 1.2, 2. , 2.8, 3.2, 3.2, 2.8, 2. , 1.2, 0.8])
+    array([4., 3., 2., 3., 4., 5., 6., 7., 6., 5.])
     """
-    # TODO add back the following docstring when they work again
-    # array([1., 1., 1., 1., 1., 1., 1., 1., 1., 1.])
-    # array([0.8, 1.2, 2. , 2.8, 3.2, 3.2, 2.8, 2. , 1.2, 0.8])
-    # array([4., 3., 2., 3., 4., 5., 6., 7., 6., 5.])
 
     if N * 2 > len(vector):
         raise ValueError('Window must be at least half of "len(vector)"')
@@ -139,34 +137,6 @@ def nested_dict2pandas_df(dictionary, depth=3, fcn=None):
     else:
         raise NotImplementedError
     return pd.DataFrame(reform)
-
-
-def is_quantities(data, dtype='scalar'):
-    """
-    Test if data is of isinstance Quantity and if it is scalar or 1D vector.
-
-    Parameters
-    ----------
-    data : list
-        data to test
-    dtype : str
-        Default = "scalar", or "vector"
-    """
-    if not isinstance(data, list):
-        data = [data]
-    for d in data:
-        if dtype == 'scalar':
-            try:
-                assert isinstance(d.units, pq.Quantity)
-                assert d.shape in ((), (1, ))
-            except:
-                raise ValueError('data must be a scalar quantities value')
-        if dtype == 'vector':
-            try:
-                assert isinstance(d.units, pq.Quantity)
-                assert len(d.shape) == 1
-            except:
-                raise ValueError('data must be a 1d quantities.Quantity array')
 
 
 def detect_peaks(image):
