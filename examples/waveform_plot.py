@@ -147,3 +147,69 @@ def plot_amp_clusters(sptrs, colors=None, fig=None, title=None, gs=None):
     if title is not None:
         fig.suptitle(title)
     return fig
+
+
+def plot_cluster_mean_spike(idx, feature1, feature2):
+    """Plots the average waveform of each spiketrains mean spike in a cluster
+    plot based on feature1 and feature2. The sptrs are previously separated in
+    groups, from 2 to 5 (depending on given n_clusters), with the function
+    cluster_waveform_features().
+
+    Parameters
+    ----------
+    idx : list of integers
+        for example when n_clusters is 2 containts 0s and 1s
+    feature1 : array of floats
+        array of floats describing a feature of the spiketrains mean spike
+    feature2 : array of floats
+        array of floats describing a feature of the spiketrains mean spike
+    """
+    features = np.stack(np.array([feature1, feature2]), axis=-1)
+    idx_max = np.max(idx)
+    if idx_max == 1:
+        plt.plot(features[idx == 0, 0], features[idx == 0, 1], 'Dr',
+                 features[idx == 1, 0], features[idx == 1, 1], 'Db')
+        plt.legend(["Red group", "Blue group"])
+
+    plt.xlabel('feature 1')
+    plt.ylabel('feature 2')
+
+
+def plot_histogram_waveform_feature(idx, feature, allspikes=False):
+    """Plots the feature of the spiketrains in a histogram. The sptrs are
+    previously separated in two groups, red and blue, by the function
+    cluster_waveform_features(). Default is plotting a feature of the mean
+    spike of the spiketrain. Set 'allspikes=True' if you want to plot a
+    histogram over the feature for all the spikes from each spiketrain.
+
+    Parameters
+    ----------
+    idx : list of integers
+        for example when n_clusters is 2 containts 0s and 1s
+    feature : array of floats (single spikes) OR list of arrays (all spikes)
+        (list of) array(s) of floats describing a feature of the spiketrain
+    allspikes : bool
+        set True if you want to plot all spikes and you give a list of arrays
+    """
+    idx_max = np.max(idx)
+    if idx_max == 1:
+        feature_red = []
+        feature_blue = []
+        for i in range(len(idx)):
+            if idx[i] == 0:
+                feature_red.append(feature[i])
+            if idx[i] == 1:
+                feature_blue.append(feature[i])
+        if allspikes is False:
+            red_ft = np.array(feature_red)
+            blue_ft = np.array(feature_blue)
+        if allspikes is True:
+            red_ft = np.concatenate(feature_red)
+            blue_ft = np.concatenate(feature_blue)
+        weights_red = np.ones_like(red_ft)/float(len(red_ft))
+        weights_blue = np.ones_like(blue_ft)/float(len(blue_ft))
+        plt.hist([red_ft, blue_ft], bins=100,
+                 weights=[weights_red, weights_blue], color=['r', 'b'])
+        plt.legend(["Red group", "Blue group"])
+
+    plt.xlabel('Feature')
