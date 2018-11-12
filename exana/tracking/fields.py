@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def spatial_rate_map(x, y, t, sptr, binsize=0.01, box_xlen=1,
+def spatial_rate_map(x, y, t, spike_train, binsize=0.01, box_xlen=1,
                      box_ylen=1, mask_unvisited=True, convolve=True,
                      return_bins=False, smoothing=0.02):
     """Divide a 2D space in bins of size binsize**2, count the number of spikes
@@ -11,7 +11,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01, box_xlen=1,
 
     Parameters
     ----------
-    sptr : neo.SpikeTrain
+    spike_train : neo.SpikeTrain
     x : float
         1d vector of x positions
     y : float
@@ -48,7 +48,7 @@ def spatial_rate_map(x, y, t, sptr, binsize=0.01, box_xlen=1,
 
     # interpolate one extra timepoint
     t_ = np.append(t, t[-1] + np.median(np.diff(t)))
-    spikes_in_bin, _ = np.histogram(sptr, t_)
+    spikes_in_bin, _ = np.histogram(spike_train, t_)
     time_in_bin = np.diff(t_)
     xbins = np.arange(0, box_xlen + binsize, binsize)
     ybins = np.arange(0, box_ylen + binsize, binsize)
@@ -359,7 +359,7 @@ def nvisits_map(x, y, t,
         return nvisits_map.T
 
 
-def spatial_rate_map_1d(x, t, sptr,
+def spatial_rate_map_1d(x, t, spike_train,
                         binsize=0.01,
                         track_len=1,
                         mask_unvisited=True,
@@ -373,7 +373,7 @@ def spatial_rate_map_1d(x, t, sptr,
 
     Parameters
     ----------
-    sptr : array
+    spike_train : array
     x : array
         1d vector of x positions
     t : array
@@ -407,7 +407,7 @@ def spatial_rate_map_1d(x, t, sptr,
                          'of the binsize')
     # interpolate one extra timepoint
     t_ = np.array(t.tolist() + [t.max() + np.median(np.diff(t))])
-    spikes_in_bin, _ = np.histogram(sptr, t_)
+    spikes_in_bin, _ = np.histogram(spike_train, t_)
     time_in_bin = np.diff(t_)
     xbins = np.arange(0, track_len + binsize, binsize)
     ix = np.digitize(x, xbins, right=True)
